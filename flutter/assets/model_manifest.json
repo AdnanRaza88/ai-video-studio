@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "id": "demo-t2v",
+      "name": "Demo Text-to-Video",
+      "description": "Demo entry. Download runs in-app. Replace with a real open HF model for production.",
+      "kind": "text_to_video",
+      "size_label": "~1 MB (demo)",
+      "license": "Apache-2.0",
+      "download_url": "https://huggingface.co/spaces/huggingface/README/resolve/main/README.md",
+      "recommended": true
+    },
+    {
+      "id": "hf-placeholder-small",
+      "name": "Small open video model",
+      "description": "Slot for a small open-source model from Hugging Face.",
+      "kind": "text_to_video",
+      "size_label": "~2 GB",
+      "license": "See model card",
+      "download_url": null,
+      "recommended": false
+    }
+  ]
+}
