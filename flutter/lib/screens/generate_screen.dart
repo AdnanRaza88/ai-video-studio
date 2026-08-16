@@ -11,7 +11,7 @@ class GenerateScreen extends StatefulWidget {
 }
 
 class _GenerateScreenState extends State<GenerateScreen> {
-  final controller = TextEditingController();
+  final TextEditingController controller = TextEditingController();
   String? selectedModelId;
 
   @override
@@ -24,10 +24,14 @@ class _GenerateScreenState extends State<GenerateScreen> {
   Widget build(BuildContext context) {
     final models = context.watch<ModelService>();
     final gen = context.watch<GenerationService>();
-    final ready = models.models.where((m) => models.isReady(m.id)).toList();
-    selectedModelId ??= ready.isNotEmpty
-        ? ready.first.id
-        : (models.models.isNotEmpty ? models.models.first.id : null);
+
+    final ids = models.models.map((m) => m.id).toList();
+    if (selectedModelId == null || !ids.contains(selectedModelId)) {
+      selectedModelId = ids.isNotEmpty ? ids.first : null;
+    }
+
+    final busy =
+        gen.phase == GenPhase.running || gen.phase == GenPhase.preparing;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -40,7 +44,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
         ),
         const SizedBox(height: 6),
         Text(
-          'Write a prompt. Models download in the Models tab — then generate here.',
+          'Write a prompt. Download models from the Models tab first.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Colors.black54,
               ),
@@ -51,36 +55,41 @@ class _GenerateScreenState extends State<GenerateScreen> {
           minLines: 4,
           maxLines: 8,
           decoration: const InputDecoration(
-            hintText: 'A cute cartoon rabbit counting flowers in a sunny garden…',
-            alignLabelWithHint: true,
+            border: OutlineInputBorder(),
             labelText: 'Prompt',
+            hintText: 'A cute cartoon rabbit counting flowers…',
           ),
         ),
         const SizedBox(height: 16),
-        Text('Model', style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 8),
-        if (models.models.isEmpty)
-          const Text('No models in manifest.')
-        else
+        if (ids.isNotEmpty)
           DropdownButtonFormField<String>(
             value: selectedModelId,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Model',
+            ),
             items: models.models
                 .map(
-                  (m) => DropdownMenuItem(
+                  (m) => DropdownMenuItem<String>(
                     value: m.id,
                     child: Text(
-                      '${m.name}${models.isReady(m.id) ? ' · Ready' : ' · Not downloaded'}',
+                      models.isReady(m.id)
+                          ? '${m.name} (Ready)'
+                          : '${m.name} (Not downloaded)',
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 )
                 .toList(),
-            onChanged: (v) => setState(() => selectedModelId = v),
+            onChanged: busy
+                ? null
+                : (String? v) {
+                    setState(() => selectedModelId = v);
+                  },
           ),
         const SizedBox(height: 20),
         FilledButton.icon(
-          onPressed: gen.phase == GenPhase.running ||
-                  gen.phase == GenPhase.preparing
+          onPressed: busy
               ? null
               : () async {
                   final prompt = controller.text.trim();
@@ -106,7 +115,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
                     modelId: selectedModelId!,
                   );
                 },
-          icon: const Icon(Icons.play_arrow_rounded),
+          icon: const Icon(Icons.play_arrow),
           label: const Text('Generate video'),
         ),
         if (gen.phase != GenPhase.idle) ...[
@@ -117,23 +126,16 @@ class _GenerateScreenState extends State<GenerateScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    gen.message ?? '',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
+                  Text(gen.message ?? ''),
                   const SizedBox(height: 12),
                   LinearProgressIndicator(
-                    value: gen.phase == GenPhase.failed ? 0 : gen.progress,
-                    borderRadius: BorderRadius.circular(8),
-                    minHeight: 8,
+                    value: gen.phase == GenPhase.failed ? null : gen.progress,
                   ),
                   if (gen.resultNote != null) ...[
                     const SizedBox(height: 12),
                     Text(
                       gen.resultNote!,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.black54,
-                          ),
+                      style: const TextStyle(color: Colors.black54, fontSize: 12),
                     ),
                   ],
                 ],

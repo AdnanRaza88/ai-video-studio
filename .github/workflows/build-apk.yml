@@ -33,7 +33,6 @@ jobs:
           if [ -f flutter/analysis_options.yaml ]; then cp flutter/analysis_options.yaml /tmp/avs-src/; fi
           if [ -d flutter/assets ]; then cp -a flutter/assets /tmp/avs-src/; else mkdir -p /tmp/avs-src/assets; fi
 
-          # Remove incomplete platform tree so flutter create is clean
           rm -rf flutter
           flutter create --project-name ai_video_studio --org com.aivideostudio --platforms=android flutter
 
@@ -44,18 +43,29 @@ jobs:
           rm -rf flutter/assets
           cp -a /tmp/avs-src/assets flutter/
 
-          # Ensure manifest asset exists
           test -f flutter/assets/model_manifest.json
-
           cd flutter
           flutter pub get
-          flutter doctor -v || true
+
+      - name: Analyze (fail on errors)
+        working-directory: flutter
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - name: Build release APK
         working-directory: flutter
-        run: flutter build apk --release --verbose
+        run: |
+          set -o pipefail
+          flutter build apk --release 2>&1 | tee /tmp/flutter-build.log
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-build-log
+          path: /tmp/flutter-build.log
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: ai-video-studio-apk
