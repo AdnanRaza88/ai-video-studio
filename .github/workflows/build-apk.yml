@@ -14,77 +14,33 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: "17"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.5'
-          channel: 'stable'
+          flutter-version: "3.24.5"
+          channel: stable
           cache: true
 
-      - name: Bootstrap Flutter Android platform (preserve lib)
+      - name: Bootstrap Android platform (keep lib + assets)
         working-directory: flutter
         run: |
           set -e
-          # Backup our custom Dart code
-          mkdir -p /tmp/avs-lib-backup
-          cp -a lib /tmp/avs-lib-backup/
-          cp -a pubspec.yaml /tmp/avs-lib-backup/
-          cp -a analysis_options.yaml /tmp/avs-lib-backup/ 2>/dev/null || true
+          mkdir -p /tmp/avs-backup
+          cp -a lib /tmp/avs-backup/
+          cp -a pubspec.yaml /tmp/avs-backup/
+          cp -a analysis_options.yaml /tmp/avs-backup/ 2>/dev/null || true
+          cp -a assets /tmp/avs-backup/ 2>/dev/null || true
 
-          # Generate complete Android platform files
           flutter create . --project-name ai_video_studio --org com.aivideostudio --platforms=android
 
-          # Restore our custom code
           rm -rf lib
-          cp -a /tmp/avs-lib-backup/lib .
-          cp /tmp/avs-lib-backup/pubspec.yaml .
-          cp /tmp/avs-lib-backup/analysis_options.yaml . 2>/dev/null || true
-
-      - name: Restore custom MainActivity
-        working-directory: flutter
-        run: |
-          mkdir -p android/app/src/main/kotlin/com/aivideostudio/app
-          cat > android/app/src/main/kotlin/com/aivideostudio/app/MainActivity.kt << 'EOF'
-          package com.aivideostudio.app
-
-          import io.flutter.embedding.android.FlutterActivity
-          import io.flutter.embedding.engine.FlutterEngine
-          import io.flutter.plugin.common.MethodChannel
-          import io.flutter.plugin.common.EventChannel
-
-          class MainActivity : FlutterActivity() {
-              private val methodChannelName = "com.aivideostudio.app/native"
-              private val eventChannelName = "com.aivideostudio.app/progress"
-
-              override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-                  super.configureFlutterEngine(flutterEngine)
-
-                  MethodChannel(flutterEngine.dartExecutor.binaryMessenger, methodChannelName)
-                      .setMethodCallHandler { call, result ->
-                          when (call.method) {
-                              "getDeviceCapabilities" -> {
-                                  result.success(mapOf(
-                                      "ramMb" to 0,
-                                      "hasVulkan" to false,
-                                      "androidVersion" to android.os.Build.VERSION.SDK_INT
-                                  ))
-                              }
-                              "ping" -> result.success("pong")
-                              else -> result.notImplemented()
-                          }
-                      }
-
-                  EventChannel(flutterEngine.dartExecutor.binaryMessenger, eventChannelName)
-                      .setStreamHandler(object : EventChannel.StreamHandler {
-                          override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {}
-                          override fun onCancel(arguments: Any?) {}
-                      })
-              }
-          }
-          EOF
+          cp -a /tmp/avs-backup/lib .
+          cp /tmp/avs-backup/pubspec.yaml .
+          cp /tmp/avs-backup/analysis_options.yaml . 2>/dev/null || true
+          if [ -d /tmp/avs-backup/assets ]; then cp -a /tmp/avs-backup/assets .; fi
 
       - name: Install dependencies
         working-directory: flutter
