@@ -24,13 +24,24 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Bootstrap Flutter Android platform
+      - name: Bootstrap Flutter Android platform (preserve lib)
         working-directory: flutter
         run: |
           set -e
-          # Always regenerate Android platform files so the project is complete.
-          # Our custom lib/ and MainActivity will be preserved / re-applied.
+          # Backup our custom Dart code
+          mkdir -p /tmp/avs-lib-backup
+          cp -a lib /tmp/avs-lib-backup/
+          cp -a pubspec.yaml /tmp/avs-lib-backup/
+          cp -a analysis_options.yaml /tmp/avs-lib-backup/ 2>/dev/null || true
+
+          # Generate complete Android platform files
           flutter create . --project-name ai_video_studio --org com.aivideostudio --platforms=android
+
+          # Restore our custom code
+          rm -rf lib
+          cp -a /tmp/avs-lib-backup/lib .
+          cp /tmp/avs-lib-backup/pubspec.yaml .
+          cp /tmp/avs-lib-backup/analysis_options.yaml . 2>/dev/null || true
 
       - name: Restore custom MainActivity
         working-directory: flutter
