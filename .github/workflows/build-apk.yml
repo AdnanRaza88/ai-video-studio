@@ -20,12 +20,19 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.24.5'
           channel: 'stable'
+          cache: true
 
-      - name: Install dependencies
+      - name: Ensure Flutter project is complete
         working-directory: flutter
-        run: flutter pub get
+        run: |
+          # If critical files are missing, bootstrap with flutter create then keep our lib/
+          if [ ! -f android/app/build.gradle ] && [ ! -f android/app/build.gradle.kts ]; then
+            echo "Bootstrapping Flutter Android project..."
+            flutter create . --project-name ai_video_studio --org com.aivideostudio --platforms=android
+          fi
+          flutter pub get
 
       - name: Analyze
         working-directory: flutter
