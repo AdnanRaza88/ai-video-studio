@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'theme.dart';
+
 import 'screens/home_shell.dart';
+import 'theme.dart';
 
 class AiVideoStudioApp extends StatelessWidget {
   const AiVideoStudioApp({super.key});
