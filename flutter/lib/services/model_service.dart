@@ -11,10 +11,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/studio_model.dart';
 
 class ModelService extends ChangeNotifier {
-  List<StudioModel> models = [];
-  final Map<String, double> downloadProgress = {};
-  final Set<String> installed = {};
-  final Set<String> downloading = {};
+  List<StudioModel> models = <StudioModel>[];
+  final Map<String, double> downloadProgress = <String, double>{};
+  final Set<String> installed = <String>{};
+  final Set<String> downloading = <String>{};
   String? error;
 
   Future<void> load() async {
@@ -22,15 +22,15 @@ class ModelService extends ChangeNotifier {
     try {
       final raw = await rootBundle.loadString('assets/model_manifest.json');
       final data = jsonDecode(raw) as Map<String, dynamic>;
-      final list = (data['models'] as List<dynamic>? ?? [])
-          .map((e) => StudioModel.fromJson(e as Map<String, dynamic>))
+      final list = (data['models'] as List<dynamic>? ?? <dynamic>[])
+          .map((dynamic e) => StudioModel.fromJson(e as Map<String, dynamic>))
           .toList();
       models = list;
 
       final prefs = await SharedPreferences.getInstance();
       installed
         ..clear()
-        ..addAll(prefs.getStringList('installed_models') ?? []);
+        ..addAll(prefs.getStringList('installed_models') ?? <String>[]);
     } catch (e) {
       error = e.toString();
     }
@@ -40,10 +40,13 @@ class ModelService extends ChangeNotifier {
   bool isReady(String id) => installed.contains(id);
 
   Future<void> download(String id) async {
-    final model = models.cast<StudioModel?>().firstWhere(
-          (m) => m?.id == id,
-          orElse: () => null,
-        );
+    StudioModel? model;
+    for (final m in models) {
+      if (m.id == id) {
+        model = m;
+        break;
+      }
+    }
     if (model == null) return;
     if (model.downloadUrl == null || model.downloadUrl!.isEmpty) {
       error = 'No download URL for this model yet.';
@@ -73,7 +76,10 @@ class ModelService extends ChangeNotifier {
 
       final total = response.contentLength ?? 0;
       var received = 0;
-      final file = File(p.join(modelDir.path, uri.pathSegments.last));
+      final name = uri.pathSegments.isNotEmpty
+          ? uri.pathSegments.last
+          : 'model.bin';
+      final file = File(p.join(modelDir.path, name));
       final sink = file.openWrite();
 
       await for (final chunk in response.stream) {
@@ -82,10 +88,8 @@ class ModelService extends ChangeNotifier {
         if (total > 0) {
           downloadProgress[id] = received / total;
         } else {
-          downloadProgress[id] = (downloadProgress[id] ?? 0) + 0.01;
-          if ((downloadProgress[id] ?? 0) > 0.95) {
-            downloadProgress[id] = 0.95;
-          }
+          final current = downloadProgress[id] ?? 0;
+          downloadProgress[id] = current > 0.95 ? 0.95 : current + 0.01;
         }
         notifyListeners();
       }

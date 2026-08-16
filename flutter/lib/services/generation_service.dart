@@ -20,19 +20,18 @@ class GenerationService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Hook real local inference here (native / ONNX / etc.).
-      final steps = [
-        (0.2, 'Loading model…'),
-        (0.45, 'Encoding prompt…'),
-        (0.7, 'Generating frames…'),
-        (0.9, 'Encoding video…'),
-        (1.0, 'Done'),
+      final steps = <Map<String, Object>>[
+        {'p': 0.2, 'm': 'Loading model…'},
+        {'p': 0.45, 'm': 'Encoding prompt…'},
+        {'p': 0.7, 'm': 'Generating frames…'},
+        {'p': 0.9, 'm': 'Encoding video…'},
+        {'p': 1.0, 'm': 'Done'},
       ];
       phase = GenPhase.running;
       for (final step in steps) {
         await Future<void>.delayed(const Duration(milliseconds: 700));
-        progress = step.$1;
-        message = step.$2;
+        progress = step['p'] as double;
+        message = step['m'] as String;
         notifyListeners();
       }
       phase = GenPhase.done;
