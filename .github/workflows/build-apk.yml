@@ -24,15 +24,60 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Ensure Flutter project is complete
+      - name: Bootstrap Flutter Android platform
         working-directory: flutter
         run: |
-          # If critical files are missing, bootstrap with flutter create then keep our lib/
-          if [ ! -f android/app/build.gradle ] && [ ! -f android/app/build.gradle.kts ]; then
-            echo "Bootstrapping Flutter Android project..."
-            flutter create . --project-name ai_video_studio --org com.aivideostudio --platforms=android
-          fi
-          flutter pub get
+          set -e
+          # Always regenerate Android platform files so the project is complete.
+          # Our custom lib/ and MainActivity will be preserved / re-applied.
+          flutter create . --project-name ai_video_studio --org com.aivideostudio --platforms=android
+
+      - name: Restore custom MainActivity
+        working-directory: flutter
+        run: |
+          mkdir -p android/app/src/main/kotlin/com/aivideostudio/app
+          cat > android/app/src/main/kotlin/com/aivideostudio/app/MainActivity.kt << 'EOF'
+          package com.aivideostudio.app
+
+          import io.flutter.embedding.android.FlutterActivity
+          import io.flutter.embedding.engine.FlutterEngine
+          import io.flutter.plugin.common.MethodChannel
+          import io.flutter.plugin.common.EventChannel
+
+          class MainActivity : FlutterActivity() {
+              private val methodChannelName = "com.aivideostudio.app/native"
+              private val eventChannelName = "com.aivideostudio.app/progress"
+
+              override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+                  super.configureFlutterEngine(flutterEngine)
+
+                  MethodChannel(flutterEngine.dartExecutor.binaryMessenger, methodChannelName)
+                      .setMethodCallHandler { call, result ->
+                          when (call.method) {
+                              "getDeviceCapabilities" -> {
+                                  result.success(mapOf(
+                                      "ramMb" to 0,
+                                      "hasVulkan" to false,
+                                      "androidVersion" to android.os.Build.VERSION.SDK_INT
+                                  ))
+                              }
+                              "ping" -> result.success("pong")
+                              else -> result.notImplemented()
+                          }
+                      }
+
+                  EventChannel(flutterEngine.dartExecutor.binaryMessenger, eventChannelName)
+                      .setStreamHandler(object : EventChannel.StreamHandler {
+                          override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {}
+                          override fun onCancel(arguments: Any?) {}
+                      })
+              }
+          }
+          EOF
+
+      - name: Install dependencies
+        working-directory: flutter
+        run: flutter pub get
 
       - name: Analyze
         working-directory: flutter
