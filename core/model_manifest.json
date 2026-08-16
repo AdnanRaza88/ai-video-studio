@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "id": "demo-t2v",
+      "name": "Demo Text-to-Video (placeholder)",
+      "description": "Pipeline demo model entry. Replace URL with a real open HF model for production inference.",
+      "kind": "text_to_video",
+      "size_bytes": 1048576,
+      "size_label": "~1 MB (demo)",
+      "license": "Apache-2.0",
+      "homepage": "https://huggingface.co",
+      "download_url": "https://huggingface.co/spaces/huggingface/README/resolve/main/README.md",
+      "sha256": null,
+      "min_ram_mb": 4096,
+      "recommended": true,
+      "status_note": "Demo download only — wire a real small open video model for actual generation."
+    },
+    {
+      "id": "hf-placeholder-small",
+      "name": "Small open video model (slot)",
+      "description": "Reserved slot for a small open-source T2V/I2V checkpoint from Hugging Face.",
+      "kind": "text_to_video",
+      "size_bytes": 2000000000,
+      "size_label": "~2 GB",
+      "license": "See model card",
+      "homepage": "https://huggingface.co/models?pipeline_tag=text-to-video",
+      "download_url": null,
+      "sha256": null,
+      "min_ram_mb": 8192,
+      "recommended": false,
+      "status_note": "Set download_url to a concrete HF resolve link when you pick a model."
+    }
+  ]
+}

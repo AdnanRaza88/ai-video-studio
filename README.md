@@ -1,83 +1,87 @@
 # AI Video Studio
 
-**Fully open-source, local-first Android application** for creating children's cartoon rhymes and short animated videos.
+**Simple, open-source video generation** — prompt in, video out.
 
-- No backend / no cloud database / no mandatory API
-- Models downloaded to device
-- Projects, sessions, assets and videos stored locally
-- Works offline after model download
-- Flutter UI + Native Android (Kotlin / C++ / NDK)
+Models download **inside the app / web / CLI** (click or command). No separate external download tool required for normal use.
 
-## Status
+| Platform | Status |
+|----------|--------|
+| Android APK | Flutter app + CI build |
+| Desktop CLI (Windows / macOS / Linux) | Python CLI |
+| Web | Flutter web target |
+| iOS | Planned (Flutter) |
 
-This repository contains the complete product planning, architecture, schemas and a production-oriented project skeleton.
+## Features (MVP direction)
 
-A full production APK with on-device LLM + Image + Video generation requires significant native runtime work (llama.cpp / MNN / LiteRT / custom video engines) and device testing. The current skeleton is structured so that real runtimes can be plugged in.
+- Light, clean UI
+- **Models screen** — list from manifest / Hugging Face → **Download** button in-app
+- Prompt → generate short video (local pipeline; plug in real engines)
+- Local storage of models and outputs
+- Open source — contributions welcome
 
-## Documentation
+## Quick start
 
-| Document | Description |
-|----------|-------------|
-| [docs/PRD.md](docs/PRD.md) | Product Requirements |
-| [docs/DESIGN.md](docs/DESIGN.md) | Design Specification |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Technical Architecture |
-| [docs/SCHEMAS.md](docs/SCHEMAS.md) | Local Data Schemas |
-| [docs/AI_RUNTIME.md](docs/AI_RUNTIME.md) | AI Runtime notes |
-| [docs/MODEL_MANAGEMENT.md](docs/MODEL_MANAGEMENT.md) | Model Manager |
-| [docs/STORAGE.md](docs/STORAGE.md) | Storage layout |
-| [docs/SAFETY.md](docs/SAFETY.md) | Children's content safety |
-| [docs/LICENSE_AUDIT.md](docs/LICENSE_AUDIT.md) | License audit checklist |
-
-## High-level Architecture
-
-```
-Flutter UI
-    ↓
-Application Services
-    ↓
-Domain Layer
-    ↓
-Local Persistence (SQLite + Filesystem)
-    ↓
-AI Runtime Abstraction
-    ↓
-Native (Kotlin / C++ / NDK) + FFmpeg
-```
-
-## Quick Start (Development)
+### CLI (Windows / macOS / Linux)
 
 ```bash
-# Clone
-git clone https://github.com/AdnanRaza88/ai-video-studio.git
-cd ai-video-studio
+cd cli
+python -m venv .venv
 
-# Flutter side (when Flutter project is fully generated)
+# Windows PowerShell
+.\.%venv\Scripts\Activate.ps1
+
+# macOS / Linux
+source .venv/bin/activate
+
+pip install -r requirements.txt
+python -m ai_video_studio list-models
+python -m ai_video_studio download demo-t2v
+python -m ai_video_studio generate "a cute cartoon rabbit counting flowers" --model demo-t2v
+```
+
+Models and outputs go under `~/.ai-video-studio/` by default.
+
+### Android / Web (Flutter)
+
+```bash
 cd flutter
 flutter pub get
-flutter run
+flutter run                    # device / emulator
+flutter run -d chrome          # web
+flutter build apk --release    # APK
 ```
 
-## Building APK
+Or download APK from **Actions → Build APK → Artifacts**.
 
-See `.github/workflows/build-apk.yml` for CI.
+## How models work
 
-Locally (after Flutter project is ready):
+1. Open **Models** in the app (or `list-models` in CLI).
+2. Choose a model → **Download** (app/CLI fetches from Hugging Face / configured URL).
+3. Progress shown in UI / terminal.
+4. When **Ready**, use it for generation.
 
-```bash
-cd flutter
-flutter build apk --release
+No mandatory cloud backend. Generation is designed to run locally after download.
+
+## Repository layout
+
+```
+ai-video-studio/
+├── flutter/          # Mobile + web UI (light theme)
+├── cli/              # Desktop CLI
+├── core/             # Shared concepts (manifest, paths)
+├── docs/             # Product & architecture docs
+├── native/           # Future native AI bridges
+├── scripts/
+├── .github/workflows/
+├── CONTRIBUTING.md
+├── ROADMAP.md
+└── LICENSE           # Apache-2.0
 ```
 
-## Principles
+## Contributing
 
-- Local First
-- Offline First (after models)
-- Open Source (compatible licenses only)
-- No Account Required
-- No Backend
-- User-Owned Data
-- Children's content safety by design
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [ROADMAP.md](ROADMAP.md).
 
 ## License
 
-See [LICENSE](LICENSE) and [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES).
+Apache-2.0. Model weights have their own licenses — check each model card and `THIRD_PARTY_LICENSES`.
