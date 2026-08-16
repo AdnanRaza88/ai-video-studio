@@ -1,0 +1,28 @@
+# Third-Party Licenses
+
+This file must be kept up to date as models, runtimes and libraries are added.
+
+## Application Dependencies (to be filled)
+
+- Flutter / Dart SDK — BSD-3-Clause
+- Android SDK / NDK — Android Open Source Project licenses
+- SQLite — Public Domain
+- FFmpeg — LGPL / GPL (use LGPL build if possible)
+
+## AI Runtimes (examples — audit before shipping)
+
+- llama.cpp and compatible GGUF models — MIT / model-specific
+- MediaPipe / LiteRT — Apache-2.0
+- MNN — Apache-2.0
+- Any video / image / TTS model weights — **model-by-model license check required**
+
+## Important
+
+Before distributing any model weights or binaries:
+
+1. Verify redistribution rights
+2. Check commercial-use restrictions
+3. Check attribution requirements
+4. Record the exact license and source URL here
+
+See docs/LICENSE_AUDIT.md for the process.
