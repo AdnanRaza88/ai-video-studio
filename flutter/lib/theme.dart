@@ -33,7 +33,7 @@ class AppTheme {
         centerTitle: false,
         foregroundColor: clayText,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: claySurface,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -92,8 +92,8 @@ class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: claySurface,
         indicatorColor: clayAccentSoft,
-        labelTextStyle: WidgetStatePropertyAll(
-          const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        labelTextStyle: const WidgetStatePropertyAll(
+          TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
         ),
         elevation: 0,
         height: 68,
