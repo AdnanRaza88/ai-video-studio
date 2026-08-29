@@ -1,35 +1,65 @@
 {
-  "version": 1,
+  "version": 2,
   "models": [
     {
       "id": "demo-t2v",
-      "name": "Demo Text-to-Video (placeholder)",
-      "description": "Pipeline demo model entry. Replace URL with a real open HF model for production inference.",
+      "name": "Demo Text-to-Video",
+      "description": "Lightweight pipeline demo. Produces structured multi-scene output for testing the full agentic flow.",
       "kind": "text_to_video",
       "size_bytes": 1048576,
-      "size_label": "~1 MB (demo)",
+      "size_label": "~1 MB",
       "license": "Apache-2.0",
-      "homepage": "https://huggingface.co",
+      "homepage": "https://github.com/AdnanRaza88/ai-video-studio",
       "download_url": "https://huggingface.co/spaces/huggingface/README/resolve/main/README.md",
       "sha256": null,
-      "min_ram_mb": 4096,
+      "min_ram_mb": 2048,
       "recommended": true,
-      "status_note": "Demo download only — wire a real small open video model for actual generation."
+      "status_note": "Demo — full multi-scene agent graph runs locally."
     },
     {
-      "id": "hf-placeholder-small",
-      "name": "Small open video model (slot)",
-      "description": "Reserved slot for a small open-source T2V/I2V checkpoint from Hugging Face.",
+      "id": "ltx-video-2b",
+      "name": "LTX-Video 2B (Lightricks)",
+      "description": "Fast DiT-based open video model. Best for short high-quality clips. Use on desktop GPU for real inference.",
       "kind": "text_to_video",
-      "size_bytes": 2000000000,
-      "size_label": "~2 GB",
-      "license": "See model card",
-      "homepage": "https://huggingface.co/models?pipeline_tag=text-to-video",
+      "size_bytes": 9500000000,
+      "size_label": "~9.4 GB",
+      "license": "See model card (OpenRail-M variants available)",
+      "homepage": "https://huggingface.co/Lightricks/LTX-Video",
+      "download_url": null,
+      "sha256": null,
+      "min_ram_mb": 12288,
+      "recommended": true,
+      "status_note": "Set download_url to concrete safetensors resolve link. Desktop/GPU recommended. Supports seed + I2V for consistency."
+    },
+    {
+      "id": "cogvideox-2b",
+      "name": "CogVideoX-2B",
+      "description": "Strong open T2V model from THUDM/Zhipu. ~6s clips at good quality. Diffusers native.",
+      "kind": "text_to_video",
+      "size_bytes": 5000000000,
+      "size_label": "~5 GB",
+      "license": "Apache-2.0",
+      "homepage": "https://huggingface.co/THUDM/CogVideoX-2b",
+      "download_url": null,
+      "sha256": null,
+      "min_ram_mb": 16384,
+      "recommended": true,
+      "status_note": "Diffusers CogVideoXPipeline. Use with seed and image conditioning for character consistency."
+    },
+    {
+      "id": "animatediff-v15-2",
+      "name": "AnimateDiff Motion Adapter v1.5-2",
+      "description": "Motion modules for SD 1.5. Lightweight animation on top of any SD checkpoint.",
+      "kind": "motion_adapter",
+      "size_bytes": 1800000000,
+      "size_label": "~1.8 GB",
+      "license": "Apache-2.0",
+      "homepage": "https://huggingface.co/guoyww/animatediff-motion-adapter-v1-5-2",
       "download_url": null,
       "sha256": null,
       "min_ram_mb": 8192,
       "recommended": false,
-      "status_note": "Set download_url to a concrete HF resolve link when you pick a model."
+      "status_note": "Pair with an SD 1.5 base model. Good for short character animations."
     }
   ]
 }

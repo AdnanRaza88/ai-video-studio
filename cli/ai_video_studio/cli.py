@@ -9,7 +9,7 @@ from .paths import app_home, models_dir, outputs_dir
 @click.group()
 @click.version_option(__version__, prog_name="ai-video-studio")
 def main() -> None:
-    """AI Video Studio — local models, prompt to video."""
+    """AI Video Studio — local models, agentic multi-scene video."""
 
 
 @main.command("list-models")
@@ -38,9 +38,34 @@ def download_cmd(model_id: str) -> None:
 @main.command("generate")
 @click.argument("prompt")
 @click.option("--model", "model_id", default="demo-t2v", show_default=True)
-def generate_cmd(prompt: str, model_id: str) -> None:
-    """Generate from prompt using an installed model."""
-    generate_video(prompt, model_id)
+@click.option(
+    "--duration",
+    "target_duration_sec",
+    default=30,
+    show_default=True,
+    type=int,
+    help="Target total video length in seconds (5–600).",
+)
+@click.option("--seed", default=0, show_default=True, type=int, help="0 = random")
+@click.option("--character", default="", help="Character description for consistency")
+@click.option("--style", default="cute children's cartoon", show_default=True)
+def generate_cmd(
+    prompt: str,
+    model_id: str,
+    target_duration_sec: int,
+    seed: int,
+    character: str,
+    style: str,
+) -> None:
+    """Generate a multi-scene video via LangGraph agent pipeline."""
+    generate_video(
+        prompt=prompt,
+        model_id=model_id,
+        target_duration_sec=target_duration_sec,
+        seed=seed,
+        character=character,
+        style=style,
+    )
 
 
 @main.command("paths")
