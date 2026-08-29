@@ -9,8 +9,6 @@ import 'package:uuid/uuid.dart';
 
 import '../models/character.dart';
 
-/// Stores user character reference images locally.
-/// These images are attached to every scene generation request.
 class CharacterService extends ChangeNotifier {
   final List<Character> characters = <Character>[];
   final Set<String> selectedIds = <String>{};
@@ -84,13 +82,21 @@ class CharacterService extends ChangeNotifier {
   }
 
   Future<void> remove(String id) async {
+    Character? found;
+    for (final c in characters) {
+      if (c.id == id) {
+        found = c;
+        break;
+      }
+    }
     characters.removeWhere((c) => c.id == id);
     selectedIds.remove(id);
-    try {
-      // best-effort delete file
-      final match = characters.where((c) => c.id == id);
-      // already removed from list; skip file if gone
-    } catch (_) {}
+    if (found != null) {
+      try {
+        final f = File(found.imagePath);
+        if (await f.exists()) await f.delete();
+      } catch (_) {}
+    }
     await _persist();
     notifyListeners();
   }
@@ -105,7 +111,6 @@ class CharacterService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Payload for the agent: every selected character image goes to the model each scene.
   List<Map<String, String>> selectedPayload() {
     return selected
         .map(

@@ -121,7 +121,6 @@ class _GenerateScreenState extends State<GenerateScreen> {
         ),
         const SizedBox(height: 24),
 
-        // —— Characters ——
         ClayCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,7 +148,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AppTheme.clayAccentSoft.withValues(alpha: 0.5),
+                    color: AppTheme.clayAccentSoft.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(

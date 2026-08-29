@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'generate_screen.dart';
 import 'models_screen.dart';
-import '../theme.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});

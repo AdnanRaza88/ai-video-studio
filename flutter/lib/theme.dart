@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 /// Soft clay / liquid-glass inspired light theme.
-/// Rounded surfaces, gentle shadows, friendly pastels.
 class AppTheme {
   static const Color clayBg = Color(0xFFF4F6FA);
   static const Color claySurface = Color(0xFFFFFFFF);
@@ -33,7 +32,7 @@ class AppTheme {
         centerTitle: false,
         foregroundColor: clayText,
       ),
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         color: claySurface,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -102,7 +101,6 @@ class AppTheme {
   }
 }
 
-/// Soft elevated clay card with gentle outer glow.
 class ClayCard extends StatelessWidget {
   const ClayCard({
     super.key,
@@ -122,12 +120,12 @@ class ClayCard extends StatelessWidget {
         border: Border.all(color: AppTheme.clayBorder),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6C8EF5).withValues(alpha: 0.06),
+            color: const Color(0xFF6C8EF5).withOpacity(0.06),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
