@@ -31,15 +31,26 @@ class ModelService extends ChangeNotifier {
       installed
         ..clear()
         ..addAll(prefs.getStringList('installed_models') ?? <String>[]);
+      // Built-in agent always ready
+      installed.add('local-pipeline');
     } catch (e) {
       error = e.toString();
     }
     notifyListeners();
   }
 
-  bool isReady(String id) => installed.contains(id);
+  bool isReady(String id) =>
+      id == 'local-pipeline' || installed.contains(id);
 
   Future<void> download(String id) async {
+    if (id == 'local-pipeline') {
+      installed.add(id);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('installed_models', installed.toList());
+      notifyListeners();
+      return;
+    }
+
     StudioModel? model;
     for (final m in models) {
       if (m.id == id) {
@@ -49,7 +60,8 @@ class ModelService extends ChangeNotifier {
     }
     if (model == null) return;
     if (model.downloadUrl == null || model.downloadUrl!.isEmpty) {
-      error = 'No download URL for this model yet.';
+      error =
+          'No direct download URL. Use desktop HF CLI for full weights, or Settings → fal provider for cloud video.';
       notifyListeners();
       return;
     }

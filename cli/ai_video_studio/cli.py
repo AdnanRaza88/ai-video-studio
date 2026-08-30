@@ -9,14 +9,14 @@ from .paths import app_home, models_dir, outputs_dir
 @click.group()
 @click.version_option(__version__, prog_name="ai-video-studio")
 def main() -> None:
-    """AI Video Studio — character-consistent multi-scene video."""
+    """AI Video Studio — script agent + multi-scene video."""
 
 
 @main.command("list-models")
 def list_models_cmd() -> None:
     for m in list_models():
         mid = m.get("id")
-        status = "ready" if is_installed(mid) else "not installed"
+        status = "ready" if is_installed(mid) or mid == "local-pipeline" else "not installed"
         rec = " (recommended)" if m.get("recommended") else ""
         print(f"{mid}{rec}")
         print(f"  {m.get('name')}")
@@ -35,16 +35,11 @@ def download_cmd(model_id: str) -> None:
 
 @main.command("generate")
 @click.argument("prompt")
-@click.option("--model", "model_id", default="demo-t2v", show_default=True)
+@click.option("--model", "model_id", default="local-pipeline", show_default=True)
 @click.option("--duration", "target_duration_sec", default=30, show_default=True, type=int)
 @click.option("--seed", default=0, show_default=True, type=int)
-@click.option("--character", default="", help="Character name/description")
-@click.option(
-    "--character-image",
-    "character_images",
-    multiple=True,
-    help="Path to character reference image (repeatable). Sent on every scene.",
-)
+@click.option("--character", default="")
+@click.option("--character-image", "character_images", multiple=True)
 @click.option("--style", default="cute children's cartoon", show_default=True)
 def generate_cmd(
     prompt: str,
@@ -55,7 +50,6 @@ def generate_cmd(
     character_images: tuple[str, ...],
     style: str,
 ) -> None:
-    """Generate multi-scene video. Character images attach to every scene."""
     generate_video(
         prompt=prompt,
         model_id=model_id,
