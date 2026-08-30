@@ -3,9 +3,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/character_service.dart';
 import '../services/generation_service.dart';
-import '../services/model_service.dart';
+import '../services/settings_service.dart';
 import '../theme.dart';
 
 class GenerateScreen extends StatefulWidget {
@@ -16,110 +17,109 @@ class GenerateScreen extends StatefulWidget {
 }
 
 class _GenerateScreenState extends State<GenerateScreen> {
-  final TextEditingController promptCtrl = TextEditingController();
-  final TextEditingController seedCtrl = TextEditingController(text: '0');
-  final ImagePicker _picker = ImagePicker();
-
-  String? selectedModelId;
+  final ideaCtrl = TextEditingController();
+  final seedCtrl = TextEditingController(text: '0');
+  final picker = ImagePicker();
   int durationSec = 30;
 
-  static const List<int> durationOptions = [5, 15, 30, 60, 120, 180, 300, 480, 600];
+  static const durations = [15, 30, 60, 120, 180, 300];
 
   @override
   void dispose() {
-    promptCtrl.dispose();
+    ideaCtrl.dispose();
     seedCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _addCharacter(BuildContext context) async {
-    final source = await showModalBottomSheet<ImageSource>(
+  Future<void> _addChar(BuildContext context) async {
+    final src = await showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: AppTheme.claySurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Add character photo', style: Theme.of(ctx).textTheme.titleMedium),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Icons.photo_library_rounded),
-                title: const Text('Gallery'),
-                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt_rounded),
-                title: const Text('Camera'),
-                onTap: () => Navigator.pop(ctx, ImageSource.camera),
-              ),
-            ],
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+          ],
         ),
       ),
     );
-    if (source == null || !context.mounted) return;
-
-    final file = await _picker.pickImage(source: source, maxWidth: 1024, imageQuality: 90);
-    if (file == null || !context.mounted) return;
-
-    final nameCtrl = TextEditingController();
+    if (src == null || !context.mounted) return;
+    final f = await picker.pickImage(source: src, maxWidth: 1024, imageQuality: 90);
+    if (f == null || !context.mounted) return;
+    final name = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Name this character'),
-        content: TextField(
-          controller: nameCtrl,
-          decoration: const InputDecoration(
-            hintText: 'e.g. Orange rabbit',
-            labelText: 'Name',
-          ),
-          autofocus: true,
-        ),
+        title: const Text('Character name'),
+        content: TextField(controller: name, autofocus: true),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save')),
         ],
       ),
     );
-    if (ok != true || !context.mounted) return;
+    if (ok == true && context.mounted) {
+      await context.read<CharacterService>().addFromFile(
+            sourcePath: f.path,
+            name: name.text.trim().isEmpty ? 'Character' : name.text.trim(),
+          );
+    }
+  }
 
-    final chars = context.read<CharacterService>();
-    await chars.addFromFile(
-      sourcePath: file.path,
-      name: nameCtrl.text.trim().isEmpty ? 'Character' : nameCtrl.text.trim(),
-    );
+  bool get _busy {
+    final p = context.watch<GenerationService>().phase;
+    return p != GenPhase.idle && p != GenPhase.done && p != GenPhase.failed;
   }
 
   @override
   Widget build(BuildContext context) {
-    final models = context.watch<ModelService>();
     final chars = context.watch<CharacterService>();
     final gen = context.watch<GenerationService>();
-
-    final ids = models.models.map((m) => m.id).toList();
-    if (selectedModelId == null || !ids.contains(selectedModelId)) {
-      selectedModelId = ids.isNotEmpty ? ids.first : null;
-    }
-
-    final busy =
-        gen.phase == GenPhase.running || gen.phase == GenPhase.preparing;
+    final settings = context.watch<SettingsService>();
+    final busy = gen.phase != GenPhase.idle &&
+        gen.phase != GenPhase.done &&
+        gen.phase != GenPhase.failed;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
       children: [
-        Text('Create video', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 6),
+        Text('Studio', style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 4),
         Text(
-          'Add character photos once. Every scene gets those same images so the model keeps them consistent.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.clayMuted),
+          'Idea → script agent → scenes → provider clips. Provider: ${settings.videoProvider}',
+          style: Theme.of(context).textTheme.bodySmall,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
+
+        // Pipeline steps
+        ClayCard(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              _step(context, '1 Script', gen.phase.index >= GenPhase.writingScript.index),
+              _line(),
+              _step(context, '2 Scenes', gen.phase.index >= GenPhase.planningScenes.index),
+              _line(),
+              _step(context, '3 Clips', gen.phase.index >= GenPhase.generatingClips.index),
+              _line(),
+              _step(context, '4 Done', gen.phase == GenPhase.done),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
 
         ClayCard(
           child: Column(
@@ -127,79 +127,41 @@ class _GenerateScreenState extends State<GenerateScreen> {
             children: [
               Row(
                 children: [
-                  Expanded(
-                    child: Text('Your characters', style: Theme.of(context).textTheme.titleMedium),
-                  ),
+                  Expanded(child: Text('Characters', style: Theme.of(context).textTheme.titleMedium)),
                   TextButton.icon(
-                    onPressed: busy ? null : () => _addCharacter(context),
-                    icon: const Icon(Icons.add_photo_alternate_rounded, size: 20),
-                    label: const Text('Add photo'),
+                    onPressed: busy ? null : () => _addChar(context),
+                    icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                    label: const Text('Add'),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Selected photos are sent to the model on every scene.',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 14),
               if (chars.characters.isEmpty)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppTheme.clayAccentSoft.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    'No characters yet. Add a photo of your character so every scene stays consistent.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                    textAlign: TextAlign.center,
-                  ),
+                Text(
+                  'Add reference photos — used for consistency in prompts (and I2V when provider supports).',
+                  style: Theme.of(context).textTheme.bodySmall,
                 )
               else
                 SizedBox(
-                  height: 110,
+                  height: 96,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: chars.characters.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
-                    itemBuilder: (context, i) {
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemBuilder: (_, i) {
                       final c = chars.characters[i];
-                      final selected = chars.selectedIds.contains(c.id);
+                      final sel = chars.selectedIds.contains(c.id);
                       return GestureDetector(
-                        onTap: busy ? null : () => chars.toggleSelected(c.id),
-                        onLongPress: busy
-                            ? null
-                            : () async {
-                                final del = await showDialog<bool>(
-                                  context: context,
-                                  builder: (ctx) => AlertDialog(
-                                    title: Text('Remove ${c.name}?'),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(ctx, false),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      FilledButton(
-                                        onPressed: () => Navigator.pop(ctx, true),
-                                        child: const Text('Remove'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                                if (del == true) await chars.remove(c.id);
-                              },
+                        onTap: () => chars.toggleSelected(c.id),
                         child: Column(
                           children: [
                             Container(
-                              width: 72,
-                              height: 72,
+                              width: 64,
+                              height: 64,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(18),
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: selected ? AppTheme.clayAccent : AppTheme.clayBorder,
-                                  width: selected ? 2.5 : 1,
+                                  color: sel ? AppTheme.clayAccent : AppTheme.clayBorder,
+                                  width: sel ? 2 : 1,
                                 ),
                                 image: File(c.imagePath).existsSync()
                                     ? DecorationImage(
@@ -207,36 +169,9 @@ class _GenerateScreenState extends State<GenerateScreen> {
                                         fit: BoxFit.cover,
                                       )
                                     : null,
-                                color: AppTheme.clayAccentSoft,
-                              ),
-                              child: selected
-                                  ? Align(
-                                      alignment: Alignment.topRight,
-                                      child: Container(
-                                        margin: const EdgeInsets.all(4),
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: const BoxDecoration(
-                                          color: AppTheme.clayAccent,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(Icons.check, size: 12, color: Colors.white),
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                            const SizedBox(height: 6),
-                            SizedBox(
-                              width: 76,
-                              child: Text(
-                                c.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                                    ),
                               ),
                             ),
+                            Text(c.name, style: Theme.of(context).textTheme.bodySmall),
                           ],
                         ),
                       );
@@ -246,99 +181,49 @@ class _GenerateScreenState extends State<GenerateScreen> {
             ],
           ),
         ),
-
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
         ClayCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Story prompt', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 12),
+              Text('Your idea', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 10),
               TextField(
-                controller: promptCtrl,
+                controller: ideaCtrl,
                 minLines: 3,
                 maxLines: 6,
                 enabled: !busy,
                 decoration: const InputDecoration(
-                  hintText: 'Rabbit teaches counting in a sunny garden…',
+                  hintText: 'Rabbit teaches counting 1–10 in a garden…',
                 ),
               ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        ClayCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Settings', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 16),
-              if (ids.isNotEmpty)
-                DropdownButtonFormField<String>(
-                  value: selectedModelId,
-                  decoration: const InputDecoration(labelText: 'Model'),
-                  items: models.models
-                      .map(
-                        (m) => DropdownMenuItem<String>(
-                          value: m.id,
-                          child: Text(
-                            models.isReady(m.id)
-                                ? '${m.name} · Ready'
-                                : '${m.name} · Download needed',
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: busy ? null : (v) => setState(() => selectedModelId = v),
-                ),
-              const SizedBox(height: 16),
-              Text('Target length', style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
+              Text('Length', style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 6),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: durationOptions.map((sec) {
-                  final selected = durationSec == sec;
-                  final label = sec < 60
-                      ? '${sec}s'
-                      : '${sec ~/ 60}m${sec % 60 == 0 ? '' : ' ${sec % 60}s'}';
+                spacing: 6,
+                children: durations.map((d) {
+                  final sel = durationSec == d;
                   return ChoiceChip(
-                    label: Text(label),
-                    selected: selected,
-                    onSelected: busy ? null : (_) => setState(() => durationSec = sec),
+                    label: Text(d < 60 ? '${d}s' : '${d ~/ 60}m'),
+                    selected: sel,
+                    onSelected: busy ? null : (_) => setState(() => durationSec = d),
                     selectedColor: AppTheme.clayAccentSoft,
-                    labelStyle: TextStyle(
-                      color: selected ? AppTheme.clayAccent : AppTheme.clayText,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      side: BorderSide(
-                        color: selected ? AppTheme.clayAccent : AppTheme.clayBorder,
-                      ),
-                    ),
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               TextField(
                 controller: seedCtrl,
                 enabled: !busy,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Seed (0 = random)',
-                  helperText: 'Same seed + same character photos → more consistent style',
-                ),
+                decoration: const InputDecoration(labelText: 'Seed (0 = random)'),
               ),
             ],
           ),
         ),
-
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
         SizedBox(
           width: double.infinity,
@@ -346,84 +231,147 @@ class _GenerateScreenState extends State<GenerateScreen> {
             onPressed: busy
                 ? null
                 : () async {
-                    final prompt = promptCtrl.text.trim();
-                    if (prompt.isEmpty) {
+                    final idea = ideaCtrl.text.trim();
+                    if (idea.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Enter a prompt')),
+                        const SnackBar(content: Text('Write an idea first')),
                       );
                       return;
                     }
-                    if (selectedModelId == null) return;
-                    if (!models.isReady(selectedModelId!) && selectedModelId != 'demo-t2v') {
+                    if (settings.videoProvider == 'fal' && !settings.hasFal) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Download this model first from the Models tab'),
+                          content: Text('fal selected but no API key — open Settings'),
                         ),
                       );
-                      return;
                     }
-                    final seed = int.tryParse(seedCtrl.text.trim()) ?? 0;
-                    await gen.generate(
-                      prompt: prompt,
-                      modelId: selectedModelId!,
+                    await gen.run(
+                      idea: idea,
                       durationSec: durationSec,
-                      seed: seed,
-                      characterRefs: chars.selectedPayload(),
+                      seed: int.tryParse(seedCtrl.text) ?? 0,
+                      characterNames: chars.selected.map((c) => c.name).toList(),
+                      characterImagePath:
+                          chars.selected.isEmpty ? null : chars.selected.first.imagePath,
+                      settings: settings,
                     );
                   },
-            icon: Icon(busy ? Icons.hourglass_top_rounded : Icons.play_arrow_rounded),
-            label: Text(busy ? 'Generating…' : 'Generate video'),
+            icon: Icon(busy ? Icons.hourglass_top : Icons.auto_awesome),
+            label: Text(busy ? 'Running agent…' : 'Generate'),
           ),
         ),
 
         if (gen.phase != GenPhase.idle) ...[
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           ClayCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      gen.phase == GenPhase.done
-                          ? Icons.check_circle_rounded
-                          : gen.phase == GenPhase.failed
-                              ? Icons.error_outline_rounded
-                              : Icons.auto_awesome_rounded,
-                      color: gen.phase == GenPhase.done
-                          ? AppTheme.claySuccess
-                          : AppTheme.clayAccent,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(gen.message ?? '', style: Theme.of(context).textTheme.titleMedium),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                ClipRRect(
+                Text(gen.message ?? '', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                LinearProgressIndicator(
+                  value: gen.phase == GenPhase.failed ? null : gen.progress,
+                  minHeight: 8,
                   borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: gen.phase == GenPhase.failed ? null : gen.progress,
-                    minHeight: 8,
-                    backgroundColor: AppTheme.clayAccentSoft,
-                    color: AppTheme.clayAccent,
-                  ),
+                  color: AppTheme.clayAccent,
+                  backgroundColor: AppTheme.clayAccentSoft,
                 ),
-                if (gen.sceneProgress != null) ...[
-                  const SizedBox(height: 12),
-                  Text(gen.sceneProgress!, style: Theme.of(context).textTheme.bodySmall),
-                ],
-                if (gen.resultNote != null) ...[
-                  const SizedBox(height: 12),
-                  Text(gen.resultNote!, style: Theme.of(context).textTheme.bodySmall),
+                if (gen.detail != null) ...[
+                  const SizedBox(height: 10),
+                  Text(gen.detail!, style: Theme.of(context).textTheme.bodySmall),
                 ],
               ],
             ),
           ),
         ],
+
+        if (gen.script != null) ...[
+          const SizedBox(height: 16),
+          ClayCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Script', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Text(gen.script!.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 6),
+                Text(
+                  gen.script!.fullScript,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text('Scenes', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          ...gen.script!.scenes.map((sc) {
+            final clip = gen.clips.where((c) => c.index == sc.index).toList();
+            final st = clip.isEmpty ? 'pending' : clip.first.status;
+            final url = clip.isEmpty ? null : clip.first.videoUrl;
+            final err = clip.isEmpty ? null : clip.first.error;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: ClayCard(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${sc.index + 1}. ${sc.title}',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.clayAccentSoft,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(st, style: const TextStyle(fontSize: 11)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(sc.visualPrompt, style: Theme.of(context).textTheme.bodySmall),
+                    if (url != null) ...[
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => launchUrl(Uri.parse(url)),
+                        child: const Text('Open video'),
+                      ),
+                    ],
+                    if (err != null && st != 'ready') ...[
+                      const SizedBox(height: 4),
+                      Text(err, style: TextStyle(fontSize: 11, color: Colors.orange.shade800)),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
       ],
     );
   }
+
+  Widget _step(BuildContext context, String label, bool on) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(
+            on ? Icons.check_circle : Icons.circle_outlined,
+            size: 18,
+            color: on ? AppTheme.clayAccent : AppTheme.clayMuted,
+          ),
+          const SizedBox(height: 4),
+          Text(label, style: TextStyle(fontSize: 10, color: on ? AppTheme.clayText : AppTheme.clayMuted)),
+        ],
+      ),
+    );
+  }
+
+  Widget _line() => Container(width: 12, height: 1, color: AppTheme.clayBorder);
 }

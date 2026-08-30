@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'generate_screen.dart';
 import 'models_screen.dart';
+import 'settings_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -21,6 +22,7 @@ class _HomeShellState extends State<HomeShell> {
           children: const [
             GenerateScreen(),
             ModelsScreen(),
+            SettingsScreen(),
           ],
         ),
       ),
@@ -29,14 +31,19 @@ class _HomeShellState extends State<HomeShell> {
         onDestinationSelected: (i) => setState(() => index = i),
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.movie_creation_outlined),
-            selectedIcon: Icon(Icons.movie_creation_rounded),
-            label: 'Create',
+            icon: Icon(Icons.movie_filter_outlined),
+            selectedIcon: Icon(Icons.movie_filter),
+            label: 'Studio',
           ),
           NavigationDestination(
             icon: Icon(Icons.inventory_2_outlined),
-            selectedIcon: Icon(Icons.inventory_2_rounded),
+            selectedIcon: Icon(Icons.inventory_2),
             label: 'Models',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
       ),

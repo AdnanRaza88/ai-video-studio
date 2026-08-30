@@ -1,56 +1,39 @@
-# AI Video Studio
+# AI Video Studio v0.3
 
-**Open-source, local-first AI video studio** — your characters, multi-scene video.
+Production-oriented open-source video studio.
 
-## Core idea
+## What it actually does
 
-1. User adds **character photos** once (gallery / camera).
-2. Those images live in agent **history/state**.
-3. **Every scene** the model receives the same character images + scene prompt.
-4. Short clips are generated and **stitched** into one longer video (5s → ~10 min).
+1. **Script agent** — idea → multi-scene script (built-in planner, or Groq/OpenAI key)
+2. **Characters** — reference photos; prompts always include them for consistency
+3. **Providers** — local (script/plan only on phone) **or** fal.ai (Seedance / Veo / Gemini Omni) **or** custom HTTP API
+4. **Scene results** — each scene listed with status + Open video when provider returns URL
+5. **Models tab** — open weights slots (LTX 2B, CogVideoX-2B, AnimateDiff) for desktop CLI
 
-No signup. Models download in-app. APK via GitHub Actions.
+Phone cannot run 5–9GB diffusion weights offline. Real MP4 on mobile = API provider. Real local MP4 = desktop GPU + CLI.
 
-## Agentic pipeline (LangGraph)
+## App tabs
 
-```
-characters (images) stored in state
-        │
-plan_scenes  →  attach image paths to every scene
-        │
-generate_clip (loop)  →  model always gets character images + prompt + seed
-        │
-consistency_check  →  retry with new seed if needed
-        │
-stitch  →  final video
-```
+- **Studio** — idea, characters, duration, generate pipeline UI
+- **Models** — download markers / open model info
+- **Settings** — fal key, model id, Groq/OpenAI for scripts, custom endpoint
+
+## fal setup
+
+1. Settings → Video provider = fal.ai  
+2. Paste `FAL_KEY`  
+3. Model id e.g. `bytedance/seedance-2.0/text-to-video` or `fal-ai/veo3.1`  
+4. Generate → scenes call fal → Open video links
 
 ## CLI
 
 ```bash
-cd cli
-pip install -r requirements.txt
-python -m ai_video_studio generate "rabbit counts flowers" \
-  --character "Orange rabbit" \
-  --character-image ./refs/rabbit.png \
-  --duration 60 \
-  --seed 42
+cd cli && pip install -r requirements.txt
+python -m ai_video_studio generate "rabbit counts flowers" --duration 30 --seed 42
 ```
 
-## Flutter / Android
-
-```bash
-cd flutter
-flutter pub get
-flutter run
-```
-
-Create tab → **Add photo** for characters → select them → prompt + duration → Generate.
-
-## Models
-
-Demo pipeline works offline after download. Slots for LTX-Video 2B, CogVideoX-2B, AnimateDiff (set `download_url` + plug Diffusers I2V in `generate_clip`).
+LangGraph: `script_writer → plan_scenes → generate_clip* → stitch`
 
 ## License
 
-Apache-2.0. Model weights have separate licenses.
+Apache-2.0

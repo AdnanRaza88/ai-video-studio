@@ -1,80 +1,117 @@
 import 'package:flutter/foundation.dart';
 
-enum GenPhase { idle, preparing, running, done, failed }
+import 'provider_service.dart';
+import 'script_service.dart';
+import 'settings_service.dart';
 
-/// Mirrors the LangGraph agent on device:
-/// plan → generate each scene WITH character reference images → stitch.
+enum GenPhase {
+  idle,
+  writingScript,
+  planningScenes,
+  generatingClips,
+  stitching,
+  done,
+  failed,
+}
+
 class GenerationService extends ChangeNotifier {
   GenPhase phase = GenPhase.idle;
   double progress = 0;
   String? message;
-  String? sceneProgress;
-  String? lastPrompt;
-  String? lastModelId;
-  String? resultNote;
+  String? detail;
+  VideoScript? script;
+  final List<ClipResult> clips = [];
+  String? error;
 
-  Future<void> generate({
-    required String prompt,
-    required String modelId,
-    int durationSec = 30,
-    int seed = 0,
-    String character = '',
-    List<Map<String, String>> characterRefs = const [],
+  final _scripts = ScriptService();
+  final _providers = ProviderService();
+
+  Future<void> run({
+    required String idea,
+    required int durationSec,
+    required int seed,
+    required List<String> characterNames,
+    String? characterImagePath,
+    required SettingsService settings,
   }) async {
-    lastPrompt = prompt;
-    lastModelId = modelId;
-    phase = GenPhase.preparing;
-    progress = 0.02;
-    message = 'Loading characters…';
-    sceneProgress = characterRefs.isEmpty
-        ? 'No character images — text-only consistency'
-        : '${characterRefs.length} character image(s) will go to every scene';
-    resultNote = null;
+    phase = GenPhase.writingScript;
+    progress = 0.05;
+    message = 'Writing script…';
+    detail = 'Agent: idea → multi-scene script';
+    script = null;
+    clips.clear();
+    error = null;
     notifyListeners();
 
     try {
-      final clipLen = 5;
-      final nScenes = (durationSec / clipLen).round().clamp(1, 120);
-
-      await Future<void>.delayed(const Duration(milliseconds: 400));
-      phase = GenPhase.running;
-      message = 'Planning scenes…';
-      progress = 0.08;
+      final s = await _scripts.writeScript(
+        idea: idea,
+        targetDurationSec: durationSec,
+        characterNames: characterNames,
+        settings: settings,
+      );
+      script = s;
+      phase = GenPhase.planningScenes;
+      progress = 0.2;
+      message = 'Script ready · ${s.scenes.length} scenes';
+      detail = s.title;
       notifyListeners();
 
-      await Future<void>.delayed(const Duration(milliseconds: 350));
+      await Future<void>.delayed(const Duration(milliseconds: 400));
 
-      for (var i = 0; i < nScenes; i++) {
-        final sceneSeed = (seed == 0 ? 42 : seed) + i * 17;
-        final refNote = characterRefs.isEmpty
-            ? 'no refs'
-            : '${characterRefs.length} ref image(s)';
-        sceneProgress =
-            'Scene ${i + 1}/$nScenes · seed $sceneSeed · $refNote';
-        progress = 0.08 + (0.8 * (i + 1) / nScenes);
-        message = 'Generating scene ${i + 1} of $nScenes';
+      phase = GenPhase.generatingClips;
+      message = 'Generating clips…';
+      notifyListeners();
+
+      for (var i = 0; i < s.scenes.length; i++) {
+        final scene = s.scenes[i];
+        detail =
+            'Scene ${i + 1}/${s.scenes.length}: ${scene.title} · provider=${settings.videoProvider}';
+        progress = 0.2 + (0.65 * (i + 1) / s.scenes.length);
         notifyListeners();
-        await Future<void>.delayed(
-          Duration(milliseconds: 260 + (i % 3) * 40),
+
+        final clip = await _providers.generateClip(
+          index: i,
+          prompt: scene.visualPrompt,
+          characterImageUrl: null, // local file path not a public URL; fal needs upload
+          settings: settings,
+          seed: seed == 0 ? 42 + i * 17 : seed + i * 17,
         );
+        clips.add(clip);
+        notifyListeners();
       }
 
-      message = 'Stitching final video…';
-      sceneProgress = '$nScenes scenes · ~${durationSec}s · character-locked';
-      progress = 0.95;
+      phase = GenPhase.stitching;
+      message = 'Stitching…';
+      detail = 'Combining ${clips.length} clips';
+      progress = 0.92;
       notifyListeners();
       await Future<void>.delayed(const Duration(milliseconds: 500));
 
+      final ready = clips.where((c) => c.status == 'ready' && c.videoUrl != null).length;
+      final planned = clips.where((c) => c.status == 'planned').length;
+
       phase = GenPhase.done;
-      progress = 1.0;
-      message = 'Video ready';
-      resultNote =
-          'Done: $nScenes scenes stitched. '
-          'Each scene received the same character reference image(s). '
-          'Desktop CLI runs the full LangGraph; connect I2V model for real MP4.';
+      progress = 1;
+      if (ready > 0) {
+        message = 'Done · $ready video clip(s) from provider';
+        detail =
+            'Open scene video URLs below. Full concat: use desktop CLI FFmpeg or provider multi-shot.';
+      } else if (planned > 0) {
+        message = 'Script + scenes complete (local mode)';
+        detail =
+            'No MP4 yet — phone cannot run 2–9GB diffusion weights. '
+            'Settings → set fal API key (Seedance / Veo / Gemini Omni) for real videos, '
+            'or desktop CLI with LTX / CogVideoX.';
+      } else {
+        message = 'Finished with errors';
+        detail = clips.map((c) => c.error ?? c.status).join(' · ');
+      }
     } catch (e) {
       phase = GenPhase.failed;
-      message = e.toString();
+      error = e.toString();
+      message = 'Failed';
+      detail = error;
     }
     notifyListeners();
   }
@@ -83,8 +120,10 @@ class GenerationService extends ChangeNotifier {
     phase = GenPhase.idle;
     progress = 0;
     message = null;
-    sceneProgress = null;
-    resultNote = null;
+    detail = null;
+    script = null;
+    clips.clear();
+    error = null;
     notifyListeners();
   }
 }
