@@ -1,7 +1,7 @@
 name: ai_video_studio
-description: Open-source AI video studio — character-consistent multi-scene generation.
+description: Production AI video studio — script agents, providers, character-consistent multi-scene.
 publish_to: "none"
-version: 0.2.0+2
+version: 0.3.0+3
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -17,6 +17,7 @@ dependencies:
   provider: ^6.1.2
   uuid: ^4.4.0
   image_picker: ^1.1.2
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:

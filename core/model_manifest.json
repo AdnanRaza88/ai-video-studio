@@ -1,40 +1,40 @@
 {
-  "version": 2,
+  "version": 3,
   "models": [
     {
-      "id": "demo-t2v",
-      "name": "Demo Text-to-Video",
-      "description": "Lightweight pipeline demo. Produces structured multi-scene output for testing the full agentic flow.",
-      "kind": "text_to_video",
-      "size_bytes": 1048576,
-      "size_label": "~1 MB",
+      "id": "local-pipeline",
+      "name": "Local Agent Pipeline",
+      "description": "On-device script + scene planner.",
+      "kind": "agent",
+      "size_bytes": 1024,
+      "size_label": "Built-in",
       "license": "Apache-2.0",
       "homepage": "https://github.com/AdnanRaza88/ai-video-studio",
       "download_url": "https://huggingface.co/spaces/huggingface/README/resolve/main/README.md",
       "sha256": null,
-      "min_ram_mb": 2048,
+      "min_ram_mb": 512,
       "recommended": true,
-      "status_note": "Demo — full multi-scene agent graph runs locally."
+      "status_note": "Script agent always available."
     },
     {
       "id": "ltx-video-2b",
-      "name": "LTX-Video 2B (Lightricks)",
-      "description": "Fast DiT-based open video model. Best for short high-quality clips. Use on desktop GPU for real inference.",
+      "name": "LTX-Video 2B",
+      "description": "Lightricks open video model.",
       "kind": "text_to_video",
       "size_bytes": 9500000000,
-      "size_label": "~9.4 GB",
-      "license": "See model card (OpenRail-M variants available)",
+      "size_label": "~9 GB",
+      "license": "See HF card",
       "homepage": "https://huggingface.co/Lightricks/LTX-Video",
       "download_url": null,
       "sha256": null,
       "min_ram_mb": 12288,
       "recommended": true,
-      "status_note": "Set download_url to concrete safetensors resolve link. Desktop/GPU recommended. Supports seed + I2V for consistency."
+      "status_note": "Desktop GPU or fal cloud."
     },
     {
       "id": "cogvideox-2b",
       "name": "CogVideoX-2B",
-      "description": "Strong open T2V model from THUDM/Zhipu. ~6s clips at good quality. Diffusers native.",
+      "description": "THUDM CogVideoX 2B.",
       "kind": "text_to_video",
       "size_bytes": 5000000000,
       "size_label": "~5 GB",
@@ -44,12 +44,12 @@
       "sha256": null,
       "min_ram_mb": 16384,
       "recommended": true,
-      "status_note": "Diffusers CogVideoXPipeline. Use with seed and image conditioning for character consistency."
+      "status_note": "Desktop Diffusers."
     },
     {
       "id": "animatediff-v15-2",
-      "name": "AnimateDiff Motion Adapter v1.5-2",
-      "description": "Motion modules for SD 1.5. Lightweight animation on top of any SD checkpoint.",
+      "name": "AnimateDiff Motion Adapter",
+      "description": "SD1.5 motion modules.",
       "kind": "motion_adapter",
       "size_bytes": 1800000000,
       "size_label": "~1.8 GB",
@@ -59,7 +59,7 @@
       "sha256": null,
       "min_ram_mb": 8192,
       "recommended": false,
-      "status_note": "Pair with an SD 1.5 base model. Good for short character animations."
+      "status_note": "Desktop."
     }
   ]
 }
