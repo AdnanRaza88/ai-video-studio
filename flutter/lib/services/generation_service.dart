@@ -97,14 +97,13 @@ class GenerationService extends ChangeNotifier {
       if (ready > 0) {
         message = 'Done · $ready video clip(s) ready';
         detail =
-            'Tap Open video under each scene. Full stitch into one MP4 is next (desktop CLI or local FFmpeg).';
+            'Tap Open video under each scene. Full stitch into one MP4 is next.';
       } else if (planned > 0) {
-        message = 'Script + scenes planned (local mode)';
+        message = 'Local pipeline complete (scenes planned)';
         detail =
-            'No video file was created. On ~4GB RAM phones full diffusion models are not available. '
-            'Models tab shows what can be downloaded. '
-            'For real MP4 now: use desktop CLI, or later enable a supported local lightweight path. '
-            'Character refs are kept for consistency when generation is available.';
+            'No MP4 file yet. Character refs locked on every scene.\n'
+            'Next: Ken Burns + TTS + FFmpeg path for real offline video on 4GB phones.\n'
+            'For video today: set Provider = fal in Settings (needs API key), or use desktop CLI.';
       } else {
         message = 'Finished with errors';
         detail = clips.map((c) => c.error ?? c.status).join(' · ');
