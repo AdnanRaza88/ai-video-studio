@@ -19,6 +19,8 @@ class ModelService extends ChangeNotifier {
   String? error;
   SettingsService? _settings;
 
+  static const _builtInIds = {'local-pipeline', 'kenburns-local'};
+
   void attachSettings(SettingsService s) {
     _settings = s;
   }
@@ -37,7 +39,7 @@ class ModelService extends ChangeNotifier {
       installed
         ..clear()
         ..addAll(prefs.getStringList('installed_models') ?? <String>[]);
-      installed.add('local-pipeline');
+      installed.addAll(_builtInIds);
     } catch (e) {
       error = e.toString();
     }
@@ -45,13 +47,14 @@ class ModelService extends ChangeNotifier {
   }
 
   bool isReady(String id) =>
-      id == 'local-pipeline' || installed.contains(id);
+      _builtInIds.contains(id) || installed.contains(id);
 
   Future<void> download(String id) async {
-    if (id == 'local-pipeline') {
+    if (_builtInIds.contains(id)) {
       installed.add(id);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList('installed_models', installed.toList());
+      error = null;
       notifyListeners();
       return;
     }
@@ -71,11 +74,9 @@ class ModelService extends ChangeNotifier {
 
     if (model.downloadUrl == null || model.downloadUrl!.isEmpty) {
       error =
-          '${model.name}: no direct mobile download URL. '
-          'Full video weights (LTX / CogVideoX) need desktop GPU or a cloud provider. '
-          'On 4GB RAM phones we keep the local agent + character pipeline; '
-          'real diffusion video is desktop / higher-RAM only for now. '
-          'Set Hugging Face token in Settings for future HF downloads.';
+          '${model.name}: no direct download URL available yet.\n'
+          'Use "Ken Burns + TTS Local" or "Local Agent" — both are built-in and work offline on 4GB phones.\n'
+          'Heavy diffusion models (MobileI2V, CineMobile, etc.) need packaging for mobile or desktop CLI.';
       notifyListeners();
       return;
     }
@@ -105,14 +106,14 @@ class ModelService extends ChangeNotifier {
 
       if (response.statusCode == 401 || response.statusCode == 403) {
         throw Exception(
-          'Hugging Face auth failed (${response.statusCode}). '
-          'Add a free HF token in Settings → Hugging Face token.',
+          'Auth failed (${response.statusCode}). '
+          'If this is Hugging Face, add a free token in Settings.',
         );
       }
       if (response.statusCode != 200) {
         throw Exception(
           'Download failed (${response.statusCode}). '
-          'Check network or HF token. Body: ${response.reasonPhrase ?? ""}',
+          'Check network. ${response.reasonPhrase ?? ""}',
         );
       }
 
@@ -143,7 +144,17 @@ class ModelService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList('installed_models', installed.toList());
     } catch (e) {
-      error = e.toString();
+      final msg = e.toString();
+      if (msg.contains('Failed host lookup') ||
+          msg.contains('SocketException') ||
+          msg.contains('No address associated')) {
+        error =
+            'Network / DNS error: cannot reach the model host.\n'
+            'Check internet, try different network or set Private DNS to Automatic/Off.\n'
+            'Meanwhile use built-in models: Ken Burns + Local Agent (no download needed).';
+      } else {
+        error = msg;
+      }
     } finally {
       downloading.remove(id);
       notifyListeners();
