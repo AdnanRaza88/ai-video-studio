@@ -50,13 +50,17 @@ class ProviderService {
       );
     }
 
-    // Local: no GPU weights on phone — explicit status for user
+    // Local / Ken Burns path (default on phone)
+    // Real Ken Burns + TTS + FFmpeg stitch is the next Phase 1 implementation.
+    // Until then we return honest "planned" status — never fake a video URL.
     return ClipResult(
       index: index,
       status: 'planned',
       promptUsed: prompt,
       error:
-          'Local mode: script/scenes ready. Connect fal (Seedance/Veo) or custom API in Settings for real MP4, or run desktop CLI with LTX/CogVideoX.',
+          'Local pipeline: scene planned with character lock. '
+          'Real MP4 (Ken Burns + TTS) is the next build step. '
+          'For immediate video use fal provider in Settings, or desktop CLI.',
     );
   }
 
@@ -70,7 +74,6 @@ class ProviderService {
         ? 'bytedance/seedance-2.0/text-to-video'
         : settings.falVideoModel.trim();
 
-    // Prefer I2V endpoint when character image available
     final useI2v = characterImageUrl != null && characterImageUrl.isNotEmpty;
     final endpoint = useI2v && model.contains('seedance')
         ? model.replaceFirst('text-to-video', 'image-to-video')
