@@ -1,7 +1,7 @@
 name: ai_video_studio
 description: Production AI video studio — script agents, providers, character-consistent multi-scene.
 publish_to: "none"
-version: 0.3.0+3
+version: 0.4.0+4
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
