@@ -26,9 +26,25 @@ class ModelsScreen extends StatelessWidget {
         ),
         if (service.error != null) ...[
           const SizedBox(height: 12),
-          Text(
-            service.error!,
-            style: const TextStyle(color: Color(0xFFEF4444), height: 1.35),
+          GestureDetector(
+            onTap: () => service.clearError(),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: Text(
+                service.error!,
+                style: const TextStyle(
+                  color: Color(0xFFB91C1C),
+                  height: 1.35,
+                  fontSize: 13,
+                ),
+              ),
+            ),
           ),
         ],
         const SizedBox(height: 20),
@@ -36,8 +52,7 @@ class ModelsScreen extends StatelessWidget {
           final ready = service.isReady(m.id);
           final busy = service.downloading.contains(m.id);
           final progress = service.downloadProgress[m.id];
-          final isBuiltIn = m.downloadUrl == null &&
-              (m.id == 'local-pipeline' || m.id == 'kenburns-local');
+          final isBuiltIn = m.id == 'local-pipeline' || m.id == 'kenburns-local';
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 14),
