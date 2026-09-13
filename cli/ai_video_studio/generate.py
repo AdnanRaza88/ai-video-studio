@@ -2,12 +2,13 @@ from pathlib import Path
 from typing import Any
 
 from .graph import run_pipeline
+from .local_compose import has_ffmpeg
 from .models import get_model, is_installed
 
 
 def generate_video(
     prompt: str,
-    model_id: str = "local-pipeline",
+    model_id: str = "kenburns-local",
     target_duration_sec: int = 30,
     seed: int = 0,
     character: str = "",
@@ -15,15 +16,15 @@ def generate_video(
     style: str = "cute children's cartoon",
 ) -> Path:
     model = get_model(model_id)
-    if not model and model_id != "local-pipeline":
+    if not model and model_id not in ("local-pipeline", "kenburns-local", "demo-t2v"):
         raise SystemExit(f"Unknown model: {model_id}")
-    if (
-        model_id not in ("local-pipeline", "demo-t2v")
-        and not is_installed(model_id)
+
+    # Local models always allowed; heavy ones need install story later
+    if model_id not in ("local-pipeline", "kenburns-local", "demo-t2v") and not is_installed(
+        model_id
     ):
-        raise SystemExit(
-            f"Model '{model_id}' is not installed. "
-            f"Run: python -m ai_video_studio download {model_id}"
+        print(
+            f"Note: '{model_id}' not marked installed — pipeline will use guards / skip diffusion."
         )
 
     characters: list[dict[str, str]] = []
@@ -53,6 +54,7 @@ def generate_video(
     print(f"  duration    : ~{target_duration_sec}s")
     print(f"  seed        : {seed or 'random'}")
     print(f"  characters  : {len(characters)}")
+    print(f"  ffmpeg      : {'yes' if has_ffmpeg() else 'NO (install for MP4)'}")
 
     result: dict[str, Any] = run_pipeline(
         prompt=prompt,
@@ -76,6 +78,9 @@ def generate_video(
         raise SystemExit("Pipeline finished without a final path")
 
     out = Path(final)
-    print(f"\nJob file: {out}")
-    print("For MP4: set fal key in app, or Diffusers on GPU desktop.")
+    print(f"\nOutput: {out}")
+    if out.suffix.lower() == ".mp4":
+        print("Real MP4 produced via Ken Burns local compose (open-source, offline).")
+    else:
+        print("Job/artifact written. Install ffmpeg + Pillow for full local MP4.")
     return out
