@@ -73,7 +73,7 @@ class GenerationService extends ChangeNotifier {
         final clip = await _providers.generateClip(
           index: i,
           prompt: scene.visualPrompt,
-          characterImageUrl: null, // local file path not a public URL; fal needs upload
+          characterImageUrl: characterImagePath,
           settings: settings,
           seed: seed == 0 ? 42 + i * 17 : seed + i * 17,
         );
@@ -90,22 +90,27 @@ class GenerationService extends ChangeNotifier {
 
       final ready = clips.where((c) => c.status == 'ready' && c.videoUrl != null).length;
       final planned = clips.where((c) => c.status == 'planned').length;
+      final failed = clips.where((c) => c.status == 'failed').length;
 
       phase = GenPhase.done;
       progress = 1;
       if (ready > 0) {
-        message = 'Done · $ready video clip(s) from provider';
+        message = 'Done · $ready video clip(s) ready';
         detail =
-            'Open scene video URLs below. Full concat: use desktop CLI FFmpeg or provider multi-shot.';
+            'Tap Open video under each scene. Full stitch into one MP4 is next (desktop CLI or local FFmpeg).';
       } else if (planned > 0) {
-        message = 'Script + scenes complete (local mode)';
+        message = 'Script + scenes planned (local mode)';
         detail =
-            'No MP4 yet — phone cannot run 2–9GB diffusion weights. '
-            'Settings → set fal API key (Seedance / Veo / Gemini Omni) for real videos, '
-            'or desktop CLI with LTX / CogVideoX.';
+            'No video file was created. On ~4GB RAM phones full diffusion models are not available. '
+            'Models tab shows what can be downloaded. '
+            'For real MP4 now: use desktop CLI, or later enable a supported local lightweight path. '
+            'Character refs are kept for consistency when generation is available.';
       } else {
         message = 'Finished with errors';
         detail = clips.map((c) => c.error ?? c.status).join(' · ');
+      }
+      if (failed > 0 && ready == 0) {
+        message = 'Generation failed ($failed scene(s))';
       }
     } catch (e) {
       phase = GenPhase.failed;
