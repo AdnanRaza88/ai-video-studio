@@ -19,7 +19,7 @@ class ModelsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Download once. After that everything runs offline.',
+          'Built-in models work offline. Others download once when a URL is available.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppTheme.clayMuted,
               ),
@@ -28,7 +28,7 @@ class ModelsScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             service.error!,
-            style: const TextStyle(color: Color(0xFFEF4444)),
+            style: const TextStyle(color: Color(0xFFEF4444), height: 1.35),
           ),
         ],
         const SizedBox(height: 20),
@@ -36,6 +36,8 @@ class ModelsScreen extends StatelessWidget {
           final ready = service.isReady(m.id);
           final busy = service.downloading.contains(m.id);
           final progress = service.downloadProgress[m.id];
+          final isBuiltIn = m.downloadUrl == null &&
+              (m.id == 'local-pipeline' || m.id == 'kenburns-local');
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 14),
@@ -113,7 +115,7 @@ class ModelsScreen extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                               ),
-                              child: const Text('Ready'),
+                              child: Text(isBuiltIn ? 'Ready (built-in)' : 'Ready'),
                             )
                           : FilledButton(
                               onPressed: m.downloadUrl == null
@@ -121,7 +123,7 @@ class ModelsScreen extends StatelessWidget {
                                   : () => service.download(m.id),
                               child: Text(
                                 m.downloadUrl == null
-                                    ? 'URL not set'
+                                    ? 'Not available yet'
                                     : 'Download',
                               ),
                             ),
