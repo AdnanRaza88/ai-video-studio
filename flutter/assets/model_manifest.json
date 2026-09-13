@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "models": [
     {
       "id": "local-pipeline",
@@ -48,7 +48,7 @@
       "min_ram_mb": 2048,
       "recommended": true,
       "priority": 2,
-      "status_note": "Weights not yet packaged for direct mobile download. Use Ken Burns for now."
+      "status_note": "Weights not packaged for direct mobile download yet. Use Ken Burns."
     },
     {
       "id": "cinemobile",
@@ -64,24 +64,24 @@
       "min_ram_mb": 2048,
       "recommended": true,
       "priority": 3,
-      "status_note": "Weights not yet packaged for direct mobile download."
+      "status_note": "Weights not packaged for direct mobile download yet."
     },
     {
       "id": "ltx-2b-distilled-gguf",
-      "name": "LTX-Video 2B Distilled (GGUF Q4)",
+      "name": "LTX-Video 2B Distilled (GGUF)",
       "description": "Lightricks LTX 2B distilled GGUF. Open-source. Best small open T2V/I2V for desktop or high-RAM devices.",
       "kind": "text_to_video",
       "size_bytes": 1330000000,
-      "size_label": "~1.33 GB (Q4_K_M)",
+      "size_label": "~1.33 GB (Q4)",
       "license": "See Lightricks",
       "homepage": "https://huggingface.co/city96/LTX-Video-0.9.6-distilled-gguf",
       "hf_id": "city96/LTX-Video-0.9.6-distilled-gguf",
-      "download_url": "https://huggingface.co/city96/LTX-Video-0.9.6-distilled-gguf/resolve/main/ltxv-2b-0.9.6-distilled-04-25-Q4_K_M.gguf",
+      "download_url": null,
       "sha256": null,
       "min_ram_mb": 4096,
-      "recommended": true,
+      "recommended": false,
       "priority": 4,
-      "status_note": "Open GGUF from city96. Requires good network + ~4GB+ RAM. Desktop/CLI preferred."
+      "status_note": "Desktop / CLI first. Mobile direct download disabled while network hosts are unreliable."
     },
     {
       "id": "animatediff-lightning",
