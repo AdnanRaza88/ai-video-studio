@@ -25,6 +25,13 @@ class ModelService extends ChangeNotifier {
     _settings = s;
   }
 
+  void clearError() {
+    if (error != null) {
+      error = null;
+      notifyListeners();
+    }
+  }
+
   Future<void> load() async {
     error = null;
     try {
@@ -76,7 +83,7 @@ class ModelService extends ChangeNotifier {
       error =
           '${model.name}: no direct download URL available yet.\n'
           'Use "Ken Burns + TTS Local" or "Local Agent" — both are built-in and work offline on 4GB phones.\n'
-          'Heavy diffusion models (MobileI2V, CineMobile, etc.) need packaging for mobile or desktop CLI.';
+          'Heavy diffusion models need packaging for mobile or desktop CLI.';
       notifyListeners();
       return;
     }
@@ -143,15 +150,16 @@ class ModelService extends ChangeNotifier {
       installed.add(id);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList('installed_models', installed.toList());
+      error = null;
     } catch (e) {
       final msg = e.toString();
       if (msg.contains('Failed host lookup') ||
           msg.contains('SocketException') ||
           msg.contains('No address associated')) {
         error =
-            'Network / DNS error: cannot reach the model host.\n'
-            'Check internet, try different network or set Private DNS to Automatic/Off.\n'
-            'Meanwhile use built-in models: Ken Burns + Local Agent (no download needed).';
+            'Network / DNS error while downloading "${model.name}".\n'
+            'Built-in models (Ken Burns + Local Agent) still work offline.\n'
+            'Tap this message to dismiss.';
       } else {
         error = msg;
       }
