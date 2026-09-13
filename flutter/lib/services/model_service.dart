@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/studio_model.dart';
+import 'settings_service.dart';
 
 class ModelService extends ChangeNotifier {
   List<StudioModel> models = <StudioModel>[];
@@ -16,6 +17,11 @@ class ModelService extends ChangeNotifier {
   final Set<String> installed = <String>{};
   final Set<String> downloading = <String>{};
   String? error;
+  SettingsService? _settings;
+
+  void attachSettings(SettingsService s) {
+    _settings = s;
+  }
 
   Future<void> load() async {
     error = null;
@@ -31,7 +37,6 @@ class ModelService extends ChangeNotifier {
       installed
         ..clear()
         ..addAll(prefs.getStringList('installed_models') ?? <String>[]);
-      // Built-in agent always ready
       installed.add('local-pipeline');
     } catch (e) {
       error = e.toString();
@@ -58,13 +63,23 @@ class ModelService extends ChangeNotifier {
         break;
       }
     }
-    if (model == null) return;
-    if (model.downloadUrl == null || model.downloadUrl!.isEmpty) {
-      error =
-          'No direct download URL. Use desktop HF CLI for full weights, or Settings → fal provider for cloud video.';
+    if (model == null) {
+      error = 'Unknown model id: $id';
       notifyListeners();
       return;
     }
+
+    if (model.downloadUrl == null || model.downloadUrl!.isEmpty) {
+      error =
+          '${model.name}: no direct mobile download URL. '
+          'Full video weights (LTX / CogVideoX) need desktop GPU or a cloud provider. '
+          'On 4GB RAM phones we keep the local agent + character pipeline; '
+          'real diffusion video is desktop / higher-RAM only for now. '
+          'Set Hugging Face token in Settings for future HF downloads.';
+      notifyListeners();
+      return;
+    }
+
     if (downloading.contains(id)) return;
 
     downloading.add(id);
@@ -80,10 +95,25 @@ class ModelService extends ChangeNotifier {
       final uri = Uri.parse(model.downloadUrl!);
       final client = http.Client();
       final request = http.Request('GET', uri);
+
+      final token = _settings?.hfToken.trim() ?? '';
+      if (token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
       final response = await client.send(request);
 
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        throw Exception(
+          'Hugging Face auth failed (${response.statusCode}). '
+          'Add a free HF token in Settings → Hugging Face token.',
+        );
+      }
       if (response.statusCode != 200) {
-        throw Exception('Download failed (${response.statusCode})');
+        throw Exception(
+          'Download failed (${response.statusCode}). '
+          'Check network or HF token. Body: ${response.reasonPhrase ?? ""}',
+        );
       }
 
       final total = response.contentLength ?? 0;
