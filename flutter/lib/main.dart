@@ -9,11 +9,20 @@ import 'services/settings_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  final settings = SettingsService();
+  final models = ModelService();
+  models.attachSettings(settings);
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => SettingsService()..load()),
-        ChangeNotifierProvider(create: (_) => ModelService()..load()),
+        ChangeNotifierProvider(create: (_) {
+          settings.load();
+          return settings;
+        }),
+        ChangeNotifierProvider(create: (_) {
+          models.load();
+          return models;
+        }),
         ChangeNotifierProvider(create: (_) => CharacterService()..load()),
         ChangeNotifierProvider(create: (_) => GenerationService()),
       ],

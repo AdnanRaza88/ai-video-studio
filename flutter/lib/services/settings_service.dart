@@ -9,6 +9,7 @@ class SettingsService extends ChangeNotifier {
   String replicateKey = '';
   String customBaseUrl = '';
   String customApiKey = '';
+  String hfToken = '';
   /// local | fal | replicate | custom
   String videoProvider = 'local';
   /// local_rule | openai | groq
@@ -24,6 +25,7 @@ class SettingsService extends ChangeNotifier {
     replicateKey = p.getString('key_replicate') ?? '';
     customBaseUrl = p.getString('custom_base_url') ?? '';
     customApiKey = p.getString('key_custom') ?? '';
+    hfToken = p.getString('key_hf') ?? '';
     videoProvider = p.getString('video_provider') ?? 'local';
     scriptProvider = p.getString('script_provider') ?? 'local_rule';
     falVideoModel =
@@ -39,6 +41,7 @@ class SettingsService extends ChangeNotifier {
     await p.setString('key_replicate', replicateKey);
     await p.setString('custom_base_url', customBaseUrl);
     await p.setString('key_custom', customApiKey);
+    await p.setString('key_hf', hfToken);
     await p.setString('video_provider', videoProvider);
     await p.setString('script_provider', scriptProvider);
     await p.setString('fal_video_model', falVideoModel);
@@ -48,4 +51,5 @@ class SettingsService extends ChangeNotifier {
   bool get hasFal => falKey.trim().isNotEmpty;
   bool get hasOpenai => openaiKey.trim().isNotEmpty;
   bool get hasGroq => groqKey.trim().isNotEmpty;
+  bool get hasHf => hfToken.trim().isNotEmpty;
 }
