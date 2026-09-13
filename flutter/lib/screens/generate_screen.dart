@@ -79,11 +79,6 @@ class _GenerateScreenState extends State<GenerateScreen> {
     }
   }
 
-  bool get _busy {
-    final p = context.watch<GenerationService>().phase;
-    return p != GenPhase.idle && p != GenPhase.done && p != GenPhase.failed;
-  }
-
   @override
   Widget build(BuildContext context) {
     final chars = context.watch<CharacterService>();
@@ -104,7 +99,6 @@ class _GenerateScreenState extends State<GenerateScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Pipeline steps
         ClayCard(
           padding: const EdgeInsets.all(14),
           child: Row(
@@ -163,13 +157,21 @@ class _GenerateScreenState extends State<GenerateScreen> {
                                   color: sel ? AppTheme.clayAccent : AppTheme.clayBorder,
                                   width: sel ? 2 : 1,
                                 ),
-                                image: File(c.imagePath).existsSync()
-                                    ? DecorationImage(
-                                        image: FileImage(File(c.imagePath)),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
+                                color: AppTheme.clayAccentSoft,
                               ),
+                              clipBehavior: Clip.antiAlias,
+                              child: File(c.imagePath).existsSync()
+                                  ? Image.file(
+                                      File(c.imagePath),
+                                      fit: BoxFit.cover,
+                                      width: 64,
+                                      height: 64,
+                                      errorBuilder: (_, __, ___) => const Icon(
+                                        Icons.broken_image_outlined,
+                                        size: 28,
+                                      ),
+                                    )
+                                  : const Icon(Icons.person_outline, size: 28),
                             ),
                             Text(c.name, style: Theme.of(context).textTheme.bodySmall),
                           ],
