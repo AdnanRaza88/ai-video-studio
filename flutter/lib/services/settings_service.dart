@@ -10,12 +10,15 @@ class SettingsService extends ChangeNotifier {
   String customBaseUrl = '';
   String customApiKey = '';
   String hfToken = '';
-  /// local | fal | replicate | custom
+  /// local | fal | custom
   String videoProvider = 'local';
-  /// local_rule | openai | groq
+  /// local_rule | openai | groq | ollama
   String scriptProvider = 'local_rule';
-  /// fal model id e.g. bytedance/seedance-2.0/text-to-video
   String falVideoModel = 'bytedance/seedance-2.0/text-to-video';
+  /// Ollama OpenAI-compatible base, e.g. http://127.0.0.1:11434 or http://192.168.1.10:11434
+  String ollamaBaseUrl = 'http://127.0.0.1:11434';
+  /// e.g. llama3.2, qwen2.5, mistral, gemma2
+  String ollamaModel = 'llama3.2';
 
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
@@ -30,6 +33,8 @@ class SettingsService extends ChangeNotifier {
     scriptProvider = p.getString('script_provider') ?? 'local_rule';
     falVideoModel =
         p.getString('fal_video_model') ?? 'bytedance/seedance-2.0/text-to-video';
+    ollamaBaseUrl = p.getString('ollama_base_url') ?? 'http://127.0.0.1:11434';
+    ollamaModel = p.getString('ollama_model') ?? 'llama3.2';
     notifyListeners();
   }
 
@@ -45,6 +50,8 @@ class SettingsService extends ChangeNotifier {
     await p.setString('video_provider', videoProvider);
     await p.setString('script_provider', scriptProvider);
     await p.setString('fal_video_model', falVideoModel);
+    await p.setString('ollama_base_url', ollamaBaseUrl);
+    await p.setString('ollama_model', ollamaModel);
     notifyListeners();
   }
 
@@ -52,4 +59,5 @@ class SettingsService extends ChangeNotifier {
   bool get hasOpenai => openaiKey.trim().isNotEmpty;
   bool get hasGroq => groqKey.trim().isNotEmpty;
   bool get hasHf => hfToken.trim().isNotEmpty;
+  bool get hasOllama => ollamaBaseUrl.trim().isNotEmpty;
 }
