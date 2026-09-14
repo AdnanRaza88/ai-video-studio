@@ -18,6 +18,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController customUrl;
   late TextEditingController customKey;
   late TextEditingController falModel;
+  late TextEditingController ollamaUrl;
+  late TextEditingController ollamaModel;
 
   @override
   void initState() {
@@ -30,6 +32,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     customUrl = TextEditingController(text: s.customBaseUrl);
     customKey = TextEditingController(text: s.customApiKey);
     falModel = TextEditingController(text: s.falVideoModel);
+    ollamaUrl = TextEditingController(text: s.ollamaBaseUrl);
+    ollamaModel = TextEditingController(text: s.ollamaModel);
   }
 
   @override
@@ -41,6 +45,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     customUrl.dispose();
     customKey.dispose();
     falModel.dispose();
+    ollamaUrl.dispose();
+    ollamaModel.dispose();
     super.dispose();
   }
 
@@ -54,7 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Text('Settings', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 6),
         Text(
-          'API keys stay on your phone. Never uploaded to our servers.',
+          'API keys stay on your phone. Ollama runs on your PC / same Wi‑Fi.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.clayMuted),
         ),
         const SizedBox(height: 20),
@@ -69,8 +75,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 value: s.videoProvider,
                 decoration: const InputDecoration(labelText: 'Provider'),
                 items: const [
-                  DropdownMenuItem(value: 'local', child: Text('Local (script only)')),
-                  DropdownMenuItem(value: 'fal', child: Text('fal.ai (Seedance / Veo / Omni)')),
+                  DropdownMenuItem(value: 'local', child: Text('Local (Ken Burns / offline)')),
+                  DropdownMenuItem(value: 'fal', child: Text('fal.ai (Seedance / Veo)')),
                   DropdownMenuItem(value: 'custom', child: Text('Custom HTTP endpoint')),
                 ],
                 onChanged: (v) {
@@ -86,7 +92,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 obscureText: true,
                 decoration: const InputDecoration(
                   labelText: 'fal.ai API key',
-                  helperText: 'FAL_KEY — Seedance, Veo 3.1, Gemini Omni on fal',
+                  helperText: 'Optional — only if Video provider = fal',
                 ),
               ),
               const SizedBox(height: 12),
@@ -94,7 +100,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 controller: falModel,
                 decoration: const InputDecoration(
                   labelText: 'fal model id',
-                  helperText: 'e.g. bytedance/seedance-2.0/text-to-video or fal-ai/veo3.1',
+                  helperText: 'e.g. bytedance/seedance-2.0/text-to-video',
                 ),
               ),
               const SizedBox(height: 12),
@@ -119,14 +125,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Script agent (LLM)', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Text(
+                'Ollama = local models, no Hugging Face. Run Ollama on PC then point the app here.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.clayMuted),
+              ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: s.scriptProvider,
                 decoration: const InputDecoration(labelText: 'Script provider'),
                 items: const [
                   DropdownMenuItem(value: 'local_rule', child: Text('Built-in planner (free)')),
-                  DropdownMenuItem(value: 'groq', child: Text('Groq (fast LLM)')),
-                  DropdownMenuItem(value: 'openai', child: Text('OpenAI')),
+                  DropdownMenuItem(value: 'ollama', child: Text('Ollama (local)')),
+                  DropdownMenuItem(value: 'groq', child: Text('Groq (cloud)')),
+                  DropdownMenuItem(value: 'openai', child: Text('OpenAI (cloud)')),
                 ],
                 onChanged: (v) {
                   if (v != null) {
@@ -134,6 +146,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     s.save();
                   }
                 },
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: ollamaUrl,
+                decoration: const InputDecoration(
+                  labelText: 'Ollama base URL',
+                  helperText: 'PC same Wi‑Fi: http://192.168.x.x:11434  ·  Emulator: http://10.0.2.2:11434',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: ollamaModel,
+                decoration: const InputDecoration(
+                  labelText: 'Ollama model',
+                  helperText: 'ollama pull llama3.2   (or qwen2.5, mistral, gemma2…)',
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -163,6 +191,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               s.customBaseUrl = customUrl.text;
               s.customApiKey = customKey.text;
               s.falVideoModel = falModel.text;
+              s.ollamaBaseUrl = ollamaUrl.text.trim();
+              s.ollamaModel = ollamaModel.text.trim();
               await s.save();
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
