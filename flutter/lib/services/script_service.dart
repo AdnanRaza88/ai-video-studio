@@ -50,6 +50,24 @@ class ScriptService {
     required List<String> characterNames,
     required SettingsService settings,
   }) async {
+    if (settings.scriptProvider == 'ollama' && settings.hasOllama) {
+      try {
+        final base = settings.ollamaBaseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+        return await _fromLlm(
+          idea: idea,
+          targetDurationSec: targetDurationSec,
+          characterNames: characterNames,
+          baseUrl: '$base/v1',
+          apiKey: 'ollama',
+          model: settings.ollamaModel.trim().isEmpty
+              ? 'llama3.2'
+              : settings.ollamaModel.trim(),
+          useJsonMode: false,
+        );
+      } catch (_) {
+        // fall through
+      }
+    }
     if (settings.scriptProvider == 'groq' && settings.hasGroq) {
       try {
         return await _fromLlm(
@@ -60,9 +78,7 @@ class ScriptService {
           apiKey: settings.groqKey,
           model: 'llama-3.3-70b-versatile',
         );
-      } catch (_) {
-        // fall through to local
-      }
+      } catch (_) {}
     }
     if (settings.scriptProvider == 'openai' && settings.hasOpenai) {
       try {
@@ -132,35 +148,51 @@ class ScriptService {
     required String baseUrl,
     required String apiKey,
     required String model,
+    bool useJsonMode = true,
   }) async {
     final n = (targetDurationSec / 5).round().clamp(1, 24);
     final system =
         'You are a children video scriptwriter. Reply ONLY valid JSON with keys: '
         'title, logline, full_script, scenes (array of {title, visual_prompt, action, duration_sec}). '
         'Exactly $n scenes. duration_sec around 5. Characters: ${characterNames.join(', ')}. '
-        'Keep character appearance consistent across scenes.';
+        'Keep character appearance consistent across scenes. No markdown, only JSON.';
+
+    final body = <String, dynamic>{
+      'model': model,
+      'temperature': 0.7,
+      'messages': [
+        {'role': 'system', 'content': system},
+        {'role': 'user', 'content': idea},
+      ],
+    };
+    if (useJsonMode) {
+      body['response_format'] = {'type': 'json_object'};
+    }
+
     final res = await http.post(
       Uri.parse('$baseUrl/chat/completions'),
       headers: {
         'Authorization': 'Bearer $apiKey',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({
-        'model': model,
-        'temperature': 0.7,
-        'messages': [
-          {'role': 'system', 'content': system},
-          {'role': 'user', 'content': idea},
-        ],
-        'response_format': {'type': 'json_object'},
-      }),
+      body: jsonEncode(body),
     );
     if (res.statusCode >= 300) {
       throw Exception('Script LLM ${res.statusCode}: ${res.body}');
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
-    final content =
+    var content =
         (data['choices'] as List).first['message']['content'] as String;
+
+    // Strip markdown fences if model wrapped JSON
+    content = content.trim();
+    if (content.startsWith('```')) {
+      content = content
+          .replaceFirst(RegExp(r'^```(?:json)?\s*'), '')
+          .replaceFirst(RegExp(r'\s*```$'), '')
+          .trim();
+    }
+
     final j = jsonDecode(content) as Map<String, dynamic>;
     final rawScenes = j['scenes'] as List? ?? [];
     final scenes = <ScenePlan>[];
