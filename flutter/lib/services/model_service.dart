@@ -81,9 +81,9 @@ class ModelService extends ChangeNotifier {
 
     if (model.downloadUrl == null || model.downloadUrl!.isEmpty) {
       error =
-          '${model.name}: no direct download URL available yet.\n'
-          'Use "Ken Burns + TTS Local" or "Local Agent" — both are built-in and work offline on 4GB phones.\n'
-          'Heavy diffusion models need packaging for mobile or desktop CLI.';
+          '${model.name}: not available for mobile download.\n'
+          'Use **Ken Burns Local Video** — built-in, offline, safe on 4GB.\n'
+          'Heavy models stay desktop-only so the phone is not overloaded.';
       notifyListeners();
       return;
     }
@@ -113,14 +113,12 @@ class ModelService extends ChangeNotifier {
 
       if (response.statusCode == 401 || response.statusCode == 403) {
         throw Exception(
-          'Auth failed (${response.statusCode}). '
-          'If this is Hugging Face, add a free token in Settings.',
+          'Auth failed (${response.statusCode}).',
         );
       }
       if (response.statusCode != 200) {
         throw Exception(
-          'Download failed (${response.statusCode}). '
-          'Check network. ${response.reasonPhrase ?? ""}',
+          'Download failed (${response.statusCode}). Check network.',
         );
       }
 
@@ -157,9 +155,9 @@ class ModelService extends ChangeNotifier {
           msg.contains('SocketException') ||
           msg.contains('No address associated')) {
         error =
-            'Network / DNS error while downloading "${model.name}".\n'
-            'Built-in models (Ken Burns + Local Agent) still work offline.\n'
-            'Tap this message to dismiss.';
+            'Network error while downloading.\n'
+            'Use built-in Ken Burns Local Video (offline).\n'
+            'Tap to dismiss.';
       } else {
         error = msg;
       }
