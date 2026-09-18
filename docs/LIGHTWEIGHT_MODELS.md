@@ -1,49 +1,57 @@
-# Lightweight Video Models Ranking (2026)
+# Local / Lightweight Video Models (maintained)
 
-Target: AI Video Studio on about 4GB RAM phones plus desktop CLI.
+**Policy:** On ~4GB phones only ship paths that cannot brick the device.
+Heavy diffusion is never auto-downloaded on mobile.
 
-## Ranked list (most practical first)
+## Mobile-ready (today)
 
-| Rank | Model | Type | Size / RAM | Why |
-|------|--------|------|------------|-----|
-| 0 | Local Agent Pipeline | Agent | Built-in | Always works. Script, character refs, locked prompts. |
-| 1 | Ken Burns plus TTS non-diffusion | Compose | under 50MB plus TTS | Best reliability on 4GB. Same character image, same voice, natural 1x pan zoom. Real MP4 today. |
-| 1 | MobileI2V 270M | I2V diffusion | about 0.5-1GB | HUST. Designed for phones. 2-step, 720p, natural motion. |
-| 2 | CineMobile | I2V diffusion | under 1GB quant, peak about 1.8GB | Cinematic camera, 4-step, phone peak memory proven. |
-| 3 | LTX-Video 2B Distilled GGUF | T2V/I2V | 0.9-2.1GB | Best open small DiT. Q4_K_M about 1.3GB. Desktop CLI first. |
-| 4 | AnimateDiff-Lightning | Motion | about 1.8GB plus SD | Fast cartoon motion on desktop. |
-| 5 | CogVideoX-2B | T2V | about 5GB | Too heavy for phones. |
+| ID | Role | Size | Status |
+|----|------|------|--------|
+| **kenburns-local** | Real offline video | Built-in | **WORKING** — character still + 1× pan/zoom → MP4 (CLI compose; Flutter path expanding) |
+| **local-pipeline** | Script + character lock | Built-in | WORKING agent |
 
-## System prompt inject every scene
+These need **no Hugging Face**, no multi-GB weights, safe RAM.
 
+## Mobile targets (native runtime later)
+
+| ID | Params / size | Notes |
+|----|---------------|--------|
+| **mobilei2v-270m** | 270M (~0.5–1 GB est.) | HUST MobileI2V — designed for phone I2V, 2-step, 720p-class. Best open *diffusion* candidate. Not wired into APK inference yet. |
+| **cinemobile** | <1 GB quant, ~1.8 GB peak | Research cinematic I2V. Do not auto-download on 4GB. |
+
+## Desktop only (never phone download)
+
+| ID | Approx size | Notes |
+|----|-------------|--------|
+| ltx-2b-distilled-gguf | ~1.3 GB Q4 | CLI / GPU |
+| cogvideox-2b | ~5 GB | GPU |
+| LongCat-Video etc. | 13B+ / tens of GB | Not for this app on mobile |
+
+## Guards
+
+1. `mobile_ready: true` only for Ken Burns + local agent.
+2. Diffusion entries have `download_url: null` on mobile builds.
+3. Generation falls back to local compose; never claim MP4 without a file.
+4. CLI LangGraph: local models → Ken Burns frames/MP4; diffusion IDs → skip with message.
+
+## System prompt (every scene)
+
+```
 CHARACTER LOCK:
 Name: {name}
 Appearance: {description}
-Reference image MUST match exactly: face, hair, outfit colors, proportions.
-Do not invent a new character.
+Reference image MUST match exactly.
 
 MOTION:
-Natural, realistic movement at 1x real-time speed.
-No slow-motion, no time-lapse, no exaggerated speed.
-Smooth continuous action suitable for children cartoon.
+Natural 1× real-time. No slow-mo / time-lapse.
 
 STYLE:
-Cute children cartoon, soft lighting, clean shapes, friendly expression.
-Negative: blurry, deformed face, extra limbs, text overlay, watermark, photorealistic human skin.
-
-## Voice consistency
-
-Map each character id to one TTS voice. Never change voice mid-video for the same character.
-
-## Implementation order
-
-1. Ken Burns local MP4 character stills plus TTS plus FFmpeg.
-2. Wire MobileI2V or CineMobile when native runtime available.
-3. LTX 2B GGUF on desktop CLI with same character prompt block.
+Cute children's cartoon, soft lighting, clean shapes.
+NEGATIVE: blurry, deformed, extra limbs, watermark.
+```
 
 ## Links
 
 - MobileI2V: https://github.com/hustvl/MobileI2V
-- LTX 2B GGUF: https://huggingface.co/city96/LTX-Video-0.9.6-distilled-gguf
-- AnimateDiff-Lightning: https://huggingface.co/ByteDance/AnimateDiff-Lightning
 - CineMobile paper: https://huggingface.co/papers/2607.03803
+- Repo CLI compose: `cli/ai_video_studio/local_compose.py`
