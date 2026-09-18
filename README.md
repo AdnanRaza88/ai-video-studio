@@ -1,38 +1,55 @@
-# AI Video Studio v0.3
+# AI Video Studio
 
-Production-oriented open-source video studio.
+Local-first open-source studio for **children’s cartoon-style videos** on Android (4GB-class) + desktop CLI.
 
-## What it actually does
+## What works today
 
-1. **Script agent** — idea → multi-scene script (built-in planner, or Groq/OpenAI key)
-2. **Characters** — reference photos; prompts always include them for consistency
-3. **Providers** — local (script/plan only on phone) **or** fal.ai (Seedance / Veo / Gemini Omni) **or** custom HTTP API
-4. **Scene results** — each scene listed with status + Open video when provider returns URL
-5. **Models tab** — open weights slots (LTX 2B, CogVideoX-2B, AnimateDiff) for desktop CLI
+| Path | What you get |
+|------|----------------|
+| **Ken Burns Local Video** | Offline character-locked clips (pan/zoom 1×). Built-in. Safe on phone. CLI can emit real MP4 with ffmpeg. |
+| **Local Agent** | Idea → multi-scene script + character refs + locked prompts |
+| **Ollama / Groq / OpenAI** | Optional better script LLM (Settings) |
+| **fal.ai** | Optional cloud video if you add an API key |
 
-Phone cannot run 5–9GB diffusion weights offline. Real MP4 on mobile = API provider. Real local MP4 = desktop GPU + CLI.
+**Not on phone:** multi-GB diffusion (LTX full, CogVideoX, LongCat-Video, etc.). Those stay desktop-only so the device is not overloaded.
+
+## Mobile video model policy
+
+1. **Primary mobile video model:** `kenburns-local` (built-in, no download).
+2. **Future mobile diffusion target:** MobileI2V 270M (native runtime not in APK yet).
+3. Heavy models: listed for CLI/desktop only — **no auto-download on mobile**.
+
+See [docs/LIGHTWEIGHT_MODELS.md](docs/LIGHTWEIGHT_MODELS.md).
 
 ## App tabs
 
-- **Studio** — idea, characters, duration, generate pipeline UI
-- **Models** — download markers / open model info
-- **Settings** — fal key, model id, Groq/OpenAI for scripts, custom endpoint
+- **Studio** — idea, characters, duration, generate
+- **Models** — built-in ready vs desktop-only slots
+- **Settings** — video provider (local / fal / custom), script provider (**Ollama**, Groq, OpenAI)
 
-## fal setup
+### Ollama (scripts, no Hugging Face)
 
-1. Settings → Video provider = fal.ai  
-2. Paste `FAL_KEY`  
-3. Model id e.g. `bytedance/seedance-2.0/text-to-video` or `fal-ai/veo3.1`  
-4. Generate → scenes call fal → Open video links
+1. PC: `ollama pull llama3.2` && `ollama serve`
+2. Settings → Script provider = Ollama
+3. Base URL = `http://<PC-LAN-IP>:11434`
+4. Model = `llama3.2`
 
-## CLI
+### fal (optional cloud video)
+
+Settings → Video provider = fal → paste `FAL_KEY`.
+
+## CLI (real local MP4 path)
 
 ```bash
 cd cli && pip install -r requirements.txt
-python -m ai_video_studio generate "rabbit counts flowers" --duration 30 --seed 42
+# ffmpeg recommended on PATH
+python -m ai_video_studio generate "rabbit counts flowers" \
+  --duration 20 --character "Orange rabbit" \
+  --character-image ./refs/rabbit.png
 ```
 
-LangGraph: `script_writer → plan_scenes → generate_clip* → stitch`
+LangGraph: `script_writer → plan_scenes → generate_clip* → stitch`  
+Default model: **kenburns-local**.
 
 ## License
 
