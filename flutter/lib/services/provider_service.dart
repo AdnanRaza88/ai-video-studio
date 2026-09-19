@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
+import 'local_video_service.dart';
 import 'settings_service.dart';
 
 class ClipResult {
@@ -20,8 +22,10 @@ class ClipResult {
   });
 }
 
-/// Cloud video providers (fal Seedance / Veo / Omni) + local stub.
+/// Cloud video providers + on-device local video model.
 class ProviderService {
+  final _localVideo = LocalVideoService();
+
   Future<ClipResult> generateClip({
     required int index,
     required String prompt,
@@ -50,18 +54,47 @@ class ProviderService {
       );
     }
 
-    // Local / Ken Burns path (default on phone)
-    // Real Ken Burns + TTS + FFmpeg stitch is the next Phase 1 implementation.
-    // Until then we return honest "planned" status — never fake a video URL.
-    return ClipResult(
+    // Default: on-device video model (Ken Burns)
+    return _localGenerate(
       index: index,
-      status: 'planned',
-      promptUsed: prompt,
-      error:
-          'Local pipeline: scene planned with character lock. '
-          'Real MP4 (Ken Burns + TTS) is the next build step. '
-          'For immediate video use fal provider in Settings, or desktop CLI.',
+      prompt: prompt,
+      characterImagePath: characterImageUrl,
     );
+  }
+
+  Future<ClipResult> _localGenerate({
+    required int index,
+    required String prompt,
+    String? characterImagePath,
+  }) async {
+    try {
+      final path = await _localVideo.renderClip(
+        characterImagePath: characterImagePath,
+        sceneIndex: index,
+        durationSec: 5,
+      );
+      if (!File(path).existsSync()) {
+        return ClipResult(
+          index: index,
+          status: 'failed',
+          promptUsed: prompt,
+          error: 'Local encode produced no file',
+        );
+      }
+      return ClipResult(
+        index: index,
+        status: 'ready',
+        videoUrl: path,
+        promptUsed: prompt,
+      );
+    } catch (e) {
+      return ClipResult(
+        index: index,
+        status: 'failed',
+        promptUsed: prompt,
+        error: e.toString(),
+      );
+    }
   }
 
   Future<ClipResult> _falGenerate({
@@ -74,7 +107,9 @@ class ProviderService {
         ? 'bytedance/seedance-2.0/text-to-video'
         : settings.falVideoModel.trim();
 
-    final useI2v = characterImageUrl != null && characterImageUrl.isNotEmpty;
+    final useI2v = characterImageUrl != null &&
+        characterImageUrl.isNotEmpty &&
+        characterImageUrl.startsWith('http');
     final endpoint = useI2v && model.contains('seedance')
         ? model.replaceFirst('text-to-video', 'image-to-video')
         : model;
@@ -104,7 +139,8 @@ class ProviderService {
           index: index,
           status: 'failed',
           promptUsed: prompt,
-          error: 'fal ${res.statusCode}: ${res.body.length > 200 ? res.body.substring(0, 200) : res.body}',
+          error:
+              'fal ${res.statusCode}: ${res.body.length > 200 ? res.body.substring(0, 200) : res.body}',
         );
       }
 
