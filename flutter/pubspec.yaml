@@ -1,7 +1,7 @@
 name: ai_video_studio
-description: Production AI video studio — script agents, local video, character-consistent multi-scene.
+description: Production AI video studio — script agents, providers, character-consistent multi-scene.
 publish_to: "none"
-version: 0.5.0+5
+version: 0.4.1+6
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -18,7 +18,6 @@ dependencies:
   uuid: ^4.4.0
   image_picker: ^1.1.2
   url_launcher: ^6.3.0
-  ffmpeg_kit_flutter_new: ^4.6.0
 
 dev_dependencies:
   flutter_test:
