@@ -45,7 +45,6 @@ jobs:
           rm -rf flutter/assets
           cp -a /tmp/avs-src/assets flutter/
 
-          # Fix default test that references MyApp
           cat > flutter/test/widget_test.dart << 'EOF'
           import 'package:flutter_test/flutter_test.dart';
 
@@ -56,9 +55,13 @@ jobs:
           }
           EOF
 
-          # image_picker needs compileSdk 35
           sed -i 's/compileSdk = .*/compileSdk = 35/' flutter/android/app/build.gradle || true
           sed -i 's/compileSdkVersion .*/compileSdkVersion 35/' flutter/android/app/build.gradle || true
+
+          # Cleartext for Ollama LAN
+          if [ -f flutter/android/app/src/main/AndroidManifest.xml ]; then
+            sed -i 's/<application /<application android:usesCleartextTraffic="true" /' flutter/android/app/src/main/AndroidManifest.xml || true
+          fi
 
           echo "=== lib tree ==="
           find flutter/lib -type f | sort
@@ -72,7 +75,27 @@ jobs:
 
       - name: Build release APK
         working-directory: flutter
-        run: flutter build apk --release 2>&1 | tee /tmp/flutter-build.log
+        run: |
+          set -euo pipefail
+          flutter build apk --release 2>&1 | tee /tmp/flutter-build.log
+          echo "=== APK search ==="
+          find build -name "*.apk" -type f 2>/dev/null || true
+
+      - name: Stage APK for upload
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/apk-out
+          APK=$(find flutter/build -name "app-release.apk" -type f | head -n1 || true)
+          if [ -z "$APK" ]; then
+            APK=$(find flutter/build -name "*.apk" -type f | head -n1 || true)
+          fi
+          if [ -z "$APK" ]; then
+            echo "No APK found"
+            find flutter/build -type f | head -50 || true
+            exit 1
+          fi
+          cp "$APK" /tmp/apk-out/app-release.apk
+          ls -la /tmp/apk-out/
 
       - name: Upload logs on failure
         if: failure()
@@ -88,5 +111,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ai-video-studio-apk
-          path: flutter/build/app/outputs/flutter-apk/app-release.apk
+          path: /tmp/apk-out/app-release.apk
           if-no-files-found: error
