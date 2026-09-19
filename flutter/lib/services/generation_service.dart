@@ -22,7 +22,6 @@ class GenerationService extends ChangeNotifier {
   VideoScript? script;
   final List<ClipResult> clips = [];
   String? error;
-  String? finalVideoPath;
 
   final _scripts = ScriptService();
   final _providers = ProviderService();
@@ -42,7 +41,6 @@ class GenerationService extends ChangeNotifier {
     script = null;
     clips.clear();
     error = null;
-    finalVideoPath = null;
     notifyListeners();
 
     try {
@@ -59,16 +57,16 @@ class GenerationService extends ChangeNotifier {
       detail = s.title;
       notifyListeners();
 
-      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await Future<void>.delayed(const Duration(milliseconds: 400));
 
       phase = GenPhase.generatingClips;
-      message = 'Rendering video clips (on-device model)…';
+      message = 'Generating clips…';
       notifyListeners();
 
       for (var i = 0; i < s.scenes.length; i++) {
         final scene = s.scenes[i];
         detail =
-            'Scene ${i + 1}/${s.scenes.length}: ${scene.title} · ${settings.videoProvider}';
+            'Scene ${i + 1}/${s.scenes.length}: ${scene.title} · provider=${settings.videoProvider}';
         progress = 0.2 + (0.65 * (i + 1) / s.scenes.length);
         notifyListeners();
 
@@ -84,31 +82,33 @@ class GenerationService extends ChangeNotifier {
       }
 
       phase = GenPhase.stitching;
-      message = 'Finishing…';
-      detail = '${clips.length} clips';
+      message = 'Stitching…';
+      detail = 'Combining ${clips.length} clips';
       progress = 0.92;
       notifyListeners();
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
 
-      final readyList = clips
-          .where((c) => c.status == 'ready' && c.videoUrl != null)
-          .toList();
-      final ready = readyList.length;
+      final ready =
+          clips.where((c) => c.status == 'ready' && c.videoUrl != null).length;
+      final planned = clips.where((c) => c.status == 'planned').length;
       final failed = clips.where((c) => c.status == 'failed').length;
 
       phase = GenPhase.done;
       progress = 1;
       if (ready > 0) {
         message = 'Done · $ready video clip(s) ready';
+        detail = 'Tap Open video under each scene.';
+      } else if (planned > 0) {
+        message = 'Local pipeline complete (scenes planned)';
         detail =
-            'Tap Open video under each scene. Local files are on your phone.';
-        finalVideoPath = readyList.last.videoUrl;
-      } else if (failed > 0) {
-        message = 'Generation failed ($failed scene(s))';
-        detail = clips.map((c) => c.error ?? c.status).join(' · ');
+            'No MP4 file yet. Character refs locked.\n'
+            'For video: set Provider = fal in Settings, or use desktop CLI.';
       } else {
-        message = 'Finished';
+        message = 'Finished with errors';
         detail = clips.map((c) => c.error ?? c.status).join(' · ');
+      }
+      if (failed > 0 && ready == 0) {
+        message = 'Generation failed ($failed scene(s))';
       }
     } catch (e) {
       phase = GenPhase.failed;
@@ -127,7 +127,6 @@ class GenerationService extends ChangeNotifier {
     script = null;
     clips.clear();
     error = null;
-    finalVideoPath = null;
     notifyListeners();
   }
 }
