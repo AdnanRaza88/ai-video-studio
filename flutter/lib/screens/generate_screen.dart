@@ -31,6 +31,18 @@ class _GenerateScreenState extends State<GenerateScreen> {
     super.dispose();
   }
 
+  Future<void> _openVideo(String pathOrUrl) async {
+    final uri = pathOrUrl.startsWith('http')
+        ? Uri.parse(pathOrUrl)
+        : Uri.file(pathOrUrl);
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open: $pathOrUrl')),
+      );
+    }
+  }
+
   Future<void> _addChar(BuildContext context) async {
     final src = await showModalBottomSheet<ImageSource>(
       context: context,
@@ -94,7 +106,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
         Text('Studio', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 4),
         Text(
-          'Idea → script agent → scenes → provider clips. Provider: ${settings.videoProvider}',
+          'On-device video model (Ken Burns) when Provider = local. Current: ${settings.videoProvider}',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 16),
@@ -131,7 +143,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
               ),
               if (chars.characters.isEmpty)
                 Text(
-                  'Add reference photos — used for consistency in prompts (and I2V when provider supports).',
+                  'Add a character photo — used as the video model input (local pan/zoom).',
                   style: Theme.of(context).textTheme.bodySmall,
                 )
               else
@@ -258,7 +270,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
                     );
                   },
             icon: Icon(busy ? Icons.hourglass_top : Icons.auto_awesome),
-            label: Text(busy ? 'Running agent…' : 'Generate'),
+            label: Text(busy ? 'Rendering video…' : 'Generate video'),
           ),
         ),
 
@@ -340,9 +352,10 @@ class _GenerateScreenState extends State<GenerateScreen> {
                     Text(sc.visualPrompt, style: Theme.of(context).textTheme.bodySmall),
                     if (url != null) ...[
                       const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () => launchUrl(Uri.parse(url)),
-                        child: const Text('Open video'),
+                      TextButton.icon(
+                        onPressed: () => _openVideo(url),
+                        icon: const Icon(Icons.play_circle_outline, size: 18),
+                        label: const Text('Open video'),
                       ),
                     ],
                     if (err != null && st != 'ready') ...[
