@@ -106,7 +106,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
         Text('Studio', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 4),
         Text(
-          'On-device video model (Ken Burns) when Provider = local. Current: ${settings.videoProvider}',
+          'Idea → script → scenes. Provider: ${settings.videoProvider} (local = plan only; fal = real video)',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 16),
@@ -143,7 +143,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
               ),
               if (chars.characters.isEmpty)
                 Text(
-                  'Add a character photo — used as the video model input (local pan/zoom).',
+                  'Add reference photos for character consistency in prompts.',
                   style: Theme.of(context).textTheme.bodySmall,
                 )
               else
@@ -270,7 +270,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
                     );
                   },
             icon: Icon(busy ? Icons.hourglass_top : Icons.auto_awesome),
-            label: Text(busy ? 'Rendering video…' : 'Generate video'),
+            label: Text(busy ? 'Running…' : 'Generate'),
           ),
         ),
 
