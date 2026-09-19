@@ -1,9 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
-import 'local_video_service.dart';
 import 'settings_service.dart';
 
 class ClipResult {
@@ -22,10 +20,8 @@ class ClipResult {
   });
 }
 
-/// Cloud video providers + on-device local video model.
+/// Cloud video providers (fal) + local stub.
 class ProviderService {
-  final _localVideo = LocalVideoService();
-
   Future<ClipResult> generateClip({
     required int index,
     required String prompt,
@@ -54,47 +50,14 @@ class ProviderService {
       );
     }
 
-    // Default: on-device video model (Ken Burns)
-    return _localGenerate(
+    return ClipResult(
       index: index,
-      prompt: prompt,
-      characterImagePath: characterImageUrl,
+      status: 'planned',
+      promptUsed: prompt,
+      error:
+          'Local mode: script/scenes ready. '
+          'For real MP4 use fal in Settings, or desktop CLI.',
     );
-  }
-
-  Future<ClipResult> _localGenerate({
-    required int index,
-    required String prompt,
-    String? characterImagePath,
-  }) async {
-    try {
-      final path = await _localVideo.renderClip(
-        characterImagePath: characterImagePath,
-        sceneIndex: index,
-        durationSec: 5,
-      );
-      if (!File(path).existsSync()) {
-        return ClipResult(
-          index: index,
-          status: 'failed',
-          promptUsed: prompt,
-          error: 'Local encode produced no file',
-        );
-      }
-      return ClipResult(
-        index: index,
-        status: 'ready',
-        videoUrl: path,
-        promptUsed: prompt,
-      );
-    } catch (e) {
-      return ClipResult(
-        index: index,
-        status: 'failed',
-        promptUsed: prompt,
-        error: e.toString(),
-      );
-    }
   }
 
   Future<ClipResult> _falGenerate({
