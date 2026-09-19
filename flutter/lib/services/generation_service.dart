@@ -90,7 +90,10 @@ class GenerationService extends ChangeNotifier {
       notifyListeners();
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
-      final ready = clips.where((c) => c.status == 'ready' && c.videoUrl != null).length;
+      final readyList = clips
+          .where((c) => c.status == 'ready' && c.videoUrl != null)
+          .toList();
+      final ready = readyList.length;
       final failed = clips.where((c) => c.status == 'failed').length;
 
       phase = GenPhase.done;
@@ -99,10 +102,7 @@ class GenerationService extends ChangeNotifier {
         message = 'Done · $ready video clip(s) ready';
         detail =
             'Tap Open video under each scene. Local files are on your phone.';
-        finalVideoPath = clips
-            .where((c) => c.status == 'ready' && c.videoUrl != null)
-            .map((c) => c.videoUrl!)
-            .lastOrNull;
+        finalVideoPath = readyList.last.videoUrl;
       } else if (failed > 0) {
         message = 'Generation failed ($failed scene(s))';
         detail = clips.map((c) => c.error ?? c.status).join(' · ');
